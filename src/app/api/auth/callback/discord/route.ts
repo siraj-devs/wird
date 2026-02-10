@@ -89,7 +89,6 @@ export async function GET(request: NextRequest) {
     const { data: existingUser } = await supabaseAdmin
       .from('users')
       .select('*')
-      .eq('provider', 'discord')
       .eq('provider_id', discordUser.id)
       .single();
 
@@ -119,7 +118,6 @@ export async function GET(request: NextRequest) {
           avatar_url: discordUser.avatar
             ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
             : null,
-          provider: 'discord',
           provider_id: discordUser.id,
         })
         .select()
@@ -137,7 +135,6 @@ export async function GET(request: NextRequest) {
     const token = generateToken({
       userId: userId,
       username: discordUser.username,
-      provider: 'discord',
     });
 
     // Set auth cookie

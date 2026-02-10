@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, removeAuthCookie } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
     const user = await getCurrentUser();
 
     if (!user) {
+      // Clear any invalid cookies
+      await removeAuthCookie();
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -21,6 +23,8 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (error || !userData) {
+      // Clear invalid cookies if user not found in DB
+      await removeAuthCookie();
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -32,11 +36,12 @@ export async function GET(request: NextRequest) {
       username: userData.username,
       email: userData.email,
       avatar_url: userData.avatar_url,
-      provider: userData.provider,
       created_at: userData.created_at,
     });
   } catch (error) {
     console.error('Get user error:', error);
+    // Clear cookies on any error
+    await removeAuthCookie();
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

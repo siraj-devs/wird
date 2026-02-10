@@ -32,7 +32,6 @@ export interface User {
   email: string | null;
   username: string;
   avatar_url: string | null;
-  provider: "discord";
   provider_id: string;
   created_at: string;
   updated_at: string;
