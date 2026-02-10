@@ -4,11 +4,10 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT NOT NULL,
   email TEXT,
   avatar_url TEXT,
-  provider TEXT NOT NULL CHECK (provider IN ('discord', 'telegram')),
   provider_id TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE(provider, provider_id)
+  UNIQUE(provider_id)
 );
 
 -- Create sessions table
@@ -21,7 +20,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 -- Create indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_users_provider_id ON users(provider, provider_id);
+CREATE INDEX IF NOT EXISTS idx_users_provider_id ON users(provider_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);

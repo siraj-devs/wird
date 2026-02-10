@@ -11,7 +11,6 @@ if (!JWT_SECRET) {
 export interface JWTPayload {
   userId: string;
   username: string;
-  provider: 'discord' | 'telegram';
 }
 
 export function generateToken(payload: JWTPayload): string {

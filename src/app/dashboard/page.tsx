@@ -8,7 +8,6 @@ interface User {
   username: string;
   email: string | null;
   avatar_url: string | null;
-  provider: "discord" | "telegram";
   created_at: string;
 }
 
