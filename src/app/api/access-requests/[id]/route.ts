@@ -34,14 +34,14 @@ export async function PATCH(
       );
     }
 
-    // Check if user is admin
+    // Check if user is admin or owner
     const { data: user } = await supabaseAdmin
       .from('users')
-      .select('is_admin')
+      .select('role')
       .eq('id', payload.userId)
       .single();
 
-    if (!user?.is_admin) {
+    if (!user || !['admin', 'owner'].includes(user.role)) {
       return NextResponse.json(
         { error: 'Forbidden: Admin access required' },
         { status: 403 }
@@ -56,7 +56,6 @@ export async function PATCH(
     };
 
     const newStatus = statusMap[action as keyof typeof statusMap];
-    console.log(id)
 
     // Update the access request
     const { data: updatedRequest, error } = await supabaseAdmin

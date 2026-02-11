@@ -9,6 +9,7 @@ interface User {
   username: string;
   email: string | null;
   avatar_url: string | null;
+  role: string;
   created_at: string;
 }
 
@@ -44,7 +45,7 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const userData = await response.json();
-        setUser(userData);
+        setUser(userData.user);
       } else {
         await fetch("/api/auth/logout", { method: "POST" });
         router.push("/login");
@@ -149,16 +150,51 @@ export default function DashboardPage() {
                   {user.username.charAt(0).toUpperCase()}
                 </div>
               )}
-              <h1 className="text-xl font-bold text-gray-900">
-                {user.username}
-              </h1>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  {user.username}
+                </h1>
+                <p className="text-xs text-gray-600 capitalize">Role: {user.role}</p>
+              </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
-            >
-              تسجيل الخروج
-            </button>
+            <div className="flex items-center gap-4">
+              {['member', 'admin', 'owner'].includes(user.role) && (
+                <button
+                  onClick={() => router.push('/tasks')}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+                >
+                  {user.role === 'member' ? 'My Tasks' : 'Tasks'}
+                </button>
+              )}
+              {['admin', 'owner'].includes(user.role) && (
+                <>
+                  <button
+                    onClick={() => router.push('/admin/tasks')}
+                    className="rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
+                  >
+                    Task Management
+                  </button>
+                  <button
+                    onClick={() => router.push('/admin/users')}
+                    className="rounded-lg bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700"
+                  >
+                    User Management
+                  </button>
+                  <button
+                    onClick={() => router.push('/admin/access-requests')}
+                    className="rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"
+                  >
+                    Access Requests
+                  </button>
+                </>
+              )}
+              <button
+                onClick={handleLogout}
+                className="rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
+              >
+                تسجيل الخروج
+              </button>
+            </div>
           </div>
         </div>
       </nav>

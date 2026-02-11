@@ -32,11 +32,14 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      id: userData.id,
-      username: userData.username,
-      email: userData.email,
-      avatar_url: userData.avatar_url,
-      created_at: userData.created_at,
+      user: {
+        id: userData.id,
+        username: userData.username,
+        email: userData.email,
+        avatar_url: userData.avatar_url,
+        role: userData.role,
+        created_at: userData.created_at,
+      }
     });
   } catch (error) {
     console.error('Get user error:', error);
