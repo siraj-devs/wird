@@ -1,12 +1,9 @@
+import env from "@/env";
 import { generateToken, setAuthCookie } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { fetchWithTimeout } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET!;
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI!;
 
 interface DiscordUser {
   id: string;
@@ -50,11 +47,11 @@ export async function GET(request: NextRequest) {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
-          client_id: DISCORD_CLIENT_ID,
-          client_secret: DISCORD_CLIENT_SECRET,
+          client_id: env.DISCORD_CLIENT_ID,
+          client_secret: env.DISCORD_CLIENT_SECRET,
           grant_type: "authorization_code",
           code: code,
-          redirect_uri: DISCORD_REDIRECT_URI,
+          redirect_uri: env.DISCORD_REDIRECT_URI,
         }),
       },
     );

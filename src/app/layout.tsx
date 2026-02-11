@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 // import { Analytics } from "@vercel/analytics/react";
+import env from "@/env";
 import { Amiri, Kufam, Tajawal } from "next/font/google";
 import "./globals.css";
 
@@ -25,7 +26,7 @@ const tajawal = Tajawal({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL!),
+  metadataBase: new URL(env.APP_URL!),
   title: "ورد",
   description: "The fastest way to build apps with Next.js and Supabase",
 };

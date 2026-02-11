@@ -1,12 +1,8 @@
-import jwt from 'jsonwebtoken';
-import { cookies } from 'next/headers';
+import env from "@/env";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 
-const JWT_SECRET = process.env.JWT_SECRET!;
-const TOKEN_COOKIE_NAME = 'auth_token';
-
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET is not defined in environment variables');
-}
+const TOKEN_COOKIE_NAME = "auth_token";
 
 export interface JWTPayload {
   userId: string;
@@ -14,14 +10,14 @@ export interface JWTPayload {
 }
 
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: '7d',
+  return jwt.sign(payload, env.JWT_SECRET, {
+    expiresIn: "7d",
   });
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
     return decoded;
   } catch (error) {
     return null;
@@ -32,10 +28,10 @@ export async function setAuthCookie(token: string) {
   const cookieStore = await cookies();
   cookieStore.set(TOKEN_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: env.NODE_ENV === "production",
+    sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/',
+    path: "/",
   });
 }
 
