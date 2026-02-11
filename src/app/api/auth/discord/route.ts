@@ -1,9 +1,9 @@
 import env from "@/env";
 import { generateState } from "@/lib/utils";
 import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const state = generateState();
   const cookieStore = await cookies();
   cookieStore.set("discord_oauth_state", state, {

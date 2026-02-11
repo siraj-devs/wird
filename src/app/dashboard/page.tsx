@@ -1,6 +1,7 @@
 "use client";
 
 import AccessRequestForm from "@/components/access-request-form";
+import UserDropdown from "@/components/user-dropdown";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -28,6 +29,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [userRequests, setUserRequests] = useState<AccessRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [approvedRequest, setApprovedRequest] = useState<AccessRequest | null>(
+    null,
+  );
 
   useEffect(() => {
     fetchUser();
@@ -38,6 +42,12 @@ export default function DashboardPage() {
       fetchUserRequestsByUserId();
     }
   }, [user]);
+
+  useEffect(() => {
+    // Find the approved request to display in dropdown
+    const approved = userRequests.find((req) => req.status === "approved");
+    setApprovedRequest(approved || null);
+  }, [userRequests]);
 
   const fetchUser = async () => {
     try {
@@ -139,61 +149,44 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-3">
-              {user.avatar_url ? (
-                <img
-                  src={user.avatar_url}
-                  alt={user.username}
-                  className="h-10 w-10 rounded-full border-2 border-gray-200"
-                />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-bold text-gray-700">
-                  {user.username.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">
-                  {user.username}
-                </h1>
-                <p className="text-xs text-gray-600 capitalize">Role: {user.role}</p>
-              </div>
+              <UserDropdown
+                user={user}
+                arabicName={approvedRequest?.full_name_arabic}
+                phoneNumber={approvedRequest?.phone_number}
+                onLogout={handleLogout}
+              />
             </div>
             <div className="flex items-center gap-4">
-              {['member', 'admin', 'owner'].includes(user.role) && (
+              {["member", "admin", "owner"].includes(user.role) && (
                 <button
-                  onClick={() => router.push('/tasks')}
+                  onClick={() => router.push("/tasks")}
                   className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
                 >
-                  {user.role === 'member' ? 'My Tasks' : 'Tasks'}
+                  {user.role === "member" ? "My Tasks" : "Tasks"}
                 </button>
               )}
-              {['admin', 'owner'].includes(user.role) && (
+              {["admin", "owner"].includes(user.role) && (
                 <>
                   <button
-                    onClick={() => router.push('/admin/tasks')}
+                    onClick={() => router.push("/admin/tasks")}
                     className="rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
                   >
                     Task Management
                   </button>
                   <button
-                    onClick={() => router.push('/admin/users')}
+                    onClick={() => router.push("/admin/users")}
                     className="rounded-lg bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700"
                   >
                     User Management
                   </button>
                   <button
-                    onClick={() => router.push('/admin/access-requests')}
+                    onClick={() => router.push("/admin/access-requests")}
                     className="rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"
                   >
                     Access Requests
                   </button>
                 </>
               )}
-              <button
-                onClick={handleLogout}
-                className="rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
-              >
-                تسجيل الخروج
-              </button>
             </div>
           </div>
         </div>
@@ -201,33 +194,6 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="space-y-6">
-          <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-lg">
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
-              <h3 className="mb-2 text-xl font-semibold text-gray-900">
-                مرحباً بك في ورد!
-              </h3>
-            </div>
-
-            <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="rounded-lg bg-gray-50 p-6">
-                <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                  معرف الحساب
-                </h3>
-                <p className="font-mono text-sm break-all text-gray-600">
-                  {user.id}
-                </p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-6">
-                <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                  عضو منذ
-                </h3>
-                <p className="text-gray-600">
-                  {new Date(user.created_at).toLocaleDateString("ar-MA")}
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Access Request Section */}
           <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-lg">
             <div className="mb-6 flex items-center justify-between">
@@ -286,7 +252,8 @@ export default function DashboardPage() {
             {!hasPendingRequest && userRequests.length === 0 && (
               <div className="py-8 text-center text-gray-500">
                 <p>
-                  لديك حاجة للوصول إلى النظام؟ اضغط على "طلب جديد" لإرسال طلبك
+                  لديك حاجة للوصول إلى النظام؟ اضغط على <b>طلب جديد</b> لإرسال
+                  طلبك
                 </p>
               </div>
             )}

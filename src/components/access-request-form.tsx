@@ -10,13 +10,14 @@ export default function AccessRequestForm({
   fetchUserRequestsByUserId: () => Promise<void>;
 }) {
   const [fullName, setFullName] = useState("المغربي");
-  const [phoneNumber, setPhoneNumber] = useState("0677728707");
+  const [phoneNumber, setPhoneNumber] = useState("677728707");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
   const validateMoroccanPhone = (phone: string) => {
-    const regex = /^(\+212|0)[5-7]\d{8}$/;
-    return regex.test(phone.replace(/\s/g, ""));
+    const cleanPhone = phone.replace(/\s/g, "");
+    const regex = /^[5-7]\d{8}$/;
+    return regex.test(cleanPhone);
   };
 
   const validateArabicText = (text: string) => {
@@ -34,7 +35,7 @@ export default function AccessRequestForm({
     }
 
     if (!validateMoroccanPhone(phoneNumber)) {
-      setFormError("الرجاء إدخال رقم هاتف مغربي صحيح");
+      setFormError("الرجاء إدخال رقم هاتف صحيح");
       return;
     }
 
@@ -62,8 +63,8 @@ export default function AccessRequestForm({
       setFullName("");
       setPhoneNumber("");
       fetchUserRequestsByUserId();
-    } catch (err: any) {
-      setFormError(err.message || "حدث خطأ. الرجاء المحاولة مرة أخرى");
+    } catch {
+      setFormError("حدث خطأ. الرجاء المحاولة مرة أخرى");
     } finally {
       setSubmitting(false);
     }
@@ -90,10 +91,14 @@ export default function AccessRequestForm({
                 type="text"
                 required
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (/^[\u0600-\u06FF\s]*$/.test(value)) {
+                    setFullName(value);
+                  }
+                }}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 placeholder="مثال: محمد بن أحمد"
-                dir="rtl"
               />
             </div>
 
@@ -101,14 +106,26 @@ export default function AccessRequestForm({
               <label className="mb-1 block text-sm font-medium text-gray-700">
                 رقم الهاتف <span className="text-red-500">*</span>
               </label>
-              <input
-                type="tel"
-                required
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                placeholder="+212612345678 or 0612345678"
-              />
+              <div dir="ltr" className="flex gap-2">
+                <div className="flex items-center rounded-md border border-gray-300 bg-gray-50 px-3 py-2">
+                  <span className="text-gray-700">+212</span>
+                </div>
+                <input
+                  type="tel"
+                  required
+                  value={phoneNumber}
+                  minLength={9}
+                  maxLength={9}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (/^\d*$/.test(value) && value.length <= 9) {
+                      setPhoneNumber(value);
+                    }
+                  }}
+                  className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  placeholder="677734999"
+                />
+              </div>
             </div>
 
             <div className="flex gap-3 pt-2">
