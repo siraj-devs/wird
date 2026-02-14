@@ -79,8 +79,6 @@ export async function GET(request: NextRequest) {
 
     const discordUser: DiscordUser = await userResponse.json();
 
-    console.log("Discord User:", discordUser);
-
     // Use admin client for database operations to bypass RLS
     if (!supabaseAdmin) {
       throw new Error("Supabase admin client not configured");

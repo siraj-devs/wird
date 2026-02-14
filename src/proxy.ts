@@ -21,7 +21,6 @@ export function proxy(request: NextRequest) {
 
   // Verify token
   const payload = verifyToken(token);
-
   if (!payload) {
     const response = NextResponse.redirect(new URL("/login", request.url));
     response.cookies.delete("auth_token");
@@ -40,6 +39,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public files (public folder)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/auth).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\..*|api).*)",
   ],
 };

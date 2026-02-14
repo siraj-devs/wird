@@ -4,6 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
+    // get user id from token
+
+    
+
+
     const { fullName, phoneNumber } = await request.json();
 
     // Validate inputs

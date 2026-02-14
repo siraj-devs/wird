@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
 // import { Analytics } from "@vercel/analytics/react";
 import env from "@/env";
-import { Amiri, Kufam, Tajawal } from "next/font/google";
+import { Amiri, Handjet, Kufam, Tajawal } from "next/font/google";
 import "./globals.css";
 
 const amiri = Amiri({
   weight: ["400", "700"],
   subsets: ["arabic"],
   variable: "--font-amiri",
+  display: "swap",
+});
+
+const handjet = Handjet({
+  weight: ["400", "500", "600", "700", "800", "900"],
+  subsets: ["arabic"],
+  variable: "--font-handjet",
   display: "swap",
 });
 
@@ -39,7 +46,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <body
-        className={`font-tajawal ${kufam.variable} ${amiri.variable} ${tajawal.variable} antialiased`}
+        className={`font-tajawal ${handjet.variable} ${kufam.variable} ${amiri.variable} ${tajawal.variable} antialiased`}
       >
         {children}
       </body>

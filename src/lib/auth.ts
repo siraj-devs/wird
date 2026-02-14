@@ -51,3 +51,9 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
   if (!token) return null;
   return verifyToken(token);
 }
+
+export async function getIdFromToken() {
+  const token = (await cookies()).get(TOKEN_COOKIE_NAME)?.value!;
+  const id = (jwt.decode(token) as JWTPayload)?.userId!;
+  return id;
+}
