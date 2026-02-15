@@ -4,14 +4,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-interface User {
-  id: string;
-  username: string;
-  email?: string;
-  role: string;
-  avatar_url?: string;
-}
-
 interface Category {
   id: string;
   name: string;

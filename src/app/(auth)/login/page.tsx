@@ -25,7 +25,7 @@ export default async function LoginPage() {
           </div>
 
           <Link
-            href="/api/auth/discord"
+            href="/login/discord"
             className="flex items-center justify-center gap-3 rounded-lg bg-[#5865F2] px-6 py-3 text-lg font-semibold text-white transition-colors duration-200 hover:bg-[#5865F2]/90"
           >
             <svg

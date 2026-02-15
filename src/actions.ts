@@ -1,16 +1,5 @@
 import { supabaseAdmin } from "./lib/supabase";
 
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  avatar_url: string;
-  provider_id: string;
-  created_at: string;
-  updated_at: string;
-  role: "owner";
-}
-
 export const getUser = async (id: string) => {
   try {
     const { data, error } = await supabaseAdmin
