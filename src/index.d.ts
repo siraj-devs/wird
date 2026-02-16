@@ -1,7 +1,7 @@
 import { ROLES } from "@/lib/utils";
 
 declare global {
-  type Role = typeof ROLES[keyof typeof ROLES];
+  type Role = (typeof ROLES)[keyof typeof ROLES];
 
   interface User {
     id: string;
@@ -23,6 +23,28 @@ declare global {
     created_at: string;
     reviewed_at?: string;
     reviewed_by?: string;
+  }
+
+  interface Category {
+    id: string;
+    name: string;
+    tasks: number;
+    created_at: string;
+    updated_at: string;
+  }
+
+  type Nullable<T> = T | null;
+
+  interface Task {
+    id: string;
+    name: string;
+    category_id: Nullable<string>;
+    is_regular: boolean;
+    start_date: Nullable<string>;
+    end_date: Nullable<string>;
+    created_at: string;
+    updated_at: string;
+    categories: Nullable<Category>;
   }
 }
 

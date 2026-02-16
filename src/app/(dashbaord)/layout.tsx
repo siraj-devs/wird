@@ -13,7 +13,7 @@ export default async function Layout({
   if (!user) redirect("/logout");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pt-16">
       <header className="fixed top-0 w-full border-b border-gray-200 bg-white/95 shadow-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
@@ -41,7 +41,7 @@ export default async function Layout({
         </div>
       </header>
 
-      <main className="mx-auto mt-16 max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}
       </main>
     </div>
