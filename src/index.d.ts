@@ -1,4 +1,4 @@
-import { ROLES } from "@/lib/utils";
+import { ROLES } from "@/lib/roles";
 
 declare global {
   type nullable<T> = T | null;

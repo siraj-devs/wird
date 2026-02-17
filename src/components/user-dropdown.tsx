@@ -1,6 +1,6 @@
 "use client";
 
-import { getRoleLabel, ROLES } from "@/lib/utils";
+import { getRoleLabel, ROLES } from "@/lib/roles";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";

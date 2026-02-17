@@ -3,8 +3,12 @@ import AddCategoryForm from "@/components/add-category-form";
 import AddTaskForm from "@/components/add-task-form";
 import ManageCategories from "@/components/manage-categoryies";
 import ManageTasks from "@/components/manage-tasks";
+import { checkRole } from "@/lib/auth-server";
+import { ROLES } from "@/lib/roles";
 
 export default async function Page() {
+  await checkRole([ROLES.OWNER, ROLES.ADMIN]);
+
   const [categories, tasks] = await Promise.all([getCategories(), getTasks()]);
 
   return (

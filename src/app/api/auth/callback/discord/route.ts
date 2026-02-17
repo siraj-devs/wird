@@ -1,5 +1,6 @@
 import env from "@/env";
-import { generateToken, setAuthCookie } from "@/lib/auth";
+import { generateToken } from "@/lib/auth";
+import { setAuthCookie } from "@/lib/auth-server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { fetchWithTimeout } from "@/lib/utils";
 import { cookies } from "next/headers";

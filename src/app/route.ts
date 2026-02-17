@@ -1,6 +1,6 @@
 import { getUser } from "@/actions";
-import { getIdFromToken } from "@/lib/auth";
-import { ROLES } from "@/lib/utils";
+import { getIdFromToken } from "@/lib/auth-server";
+import { ROLES } from "@/lib/roles";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {

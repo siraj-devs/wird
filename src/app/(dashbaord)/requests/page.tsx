@@ -1,9 +1,13 @@
 import { getRequests } from "@/actions";
 import AccessRequestForm from "@/components/access-request-form";
-import { getIdFromToken } from "@/lib/auth";
+import { checkRole } from "@/lib/auth-server";
+import { ROLES } from "@/lib/roles";
+import { getIdFromToken } from "@/lib/auth-server";
 
 export default async function Page() {
   const id = await getIdFromToken();
+  await checkRole([ROLES.GUEST], { id });
+
   const access = await getRequests(id);
 
   const getStatusBadgeClass = (status: string) => {

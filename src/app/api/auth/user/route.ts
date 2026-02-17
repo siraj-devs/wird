@@ -1,4 +1,4 @@
-import { getCurrentUser, removeAuthCookie } from "@/lib/auth";
+import { getCurrentUser, removeAuthCookie } from "@/lib/auth-server";
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 

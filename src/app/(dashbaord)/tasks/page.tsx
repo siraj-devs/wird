@@ -1,6 +1,10 @@
 import { getTasks } from "@/actions";
+import { checkRole } from "@/lib/auth-server";
+import { ROLES } from "@/lib/roles";
 
 export default async function Page() {
+  await checkRole([ROLES.OWNER, ROLES.ADMIN, ROLES.MEMBER]);
+
   const today = new Date();
   const currentDate = today.getDate();
 
@@ -38,7 +42,7 @@ export default async function Page() {
 
   return (
     <div className="flex w-full flex-1 flex-col gap-8">
-      <div className="fixed top-16 left-0 z-30 mx-auto flex w-full justify-center gap-2 bg-white/95 py-4">
+      <div className="fixed top-16 left-0 z-30 mx-auto flex w-full justify-center gap-2 bg-white/95 py-6 shadow-2xs">
         {daysToShow.map((day, id) => (
           <div
             key={id}

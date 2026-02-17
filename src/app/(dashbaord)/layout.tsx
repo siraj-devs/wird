@@ -1,6 +1,6 @@
 import { getUser } from "@/actions";
 import UserDropdown from "@/components/user-dropdown";
-import { getIdFromToken } from "@/lib/auth";
+import { getIdFromToken } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
 
 export default async function Layout({
