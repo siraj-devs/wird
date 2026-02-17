@@ -1,6 +1,8 @@
 import { ROLES } from "@/lib/utils";
 
 declare global {
+  type nullable<T> = T | null;
+
   type Role = (typeof ROLES)[keyof typeof ROLES];
 
   interface User {
@@ -8,8 +10,8 @@ declare global {
     username: string;
     provider_id: string;
     role: Role;
-    email: string | null;
-    avatar_url: string | null;
+    email: nullable<string>;
+    avatar_url: nullable<string>;
     created_at: string;
     updated_at: string;
   }
@@ -33,18 +35,18 @@ declare global {
     updated_at: string;
   }
 
-  type Nullable<T> = T | null;
-
   interface Task {
     id: string;
     name: string;
-    category_id: Nullable<string>;
-    is_regular: boolean;
-    start_date: Nullable<string>;
-    end_date: Nullable<string>;
+    category_id: nullable<string>;
+    is_active: boolean;
+    frequency: "daily" | "weekly" | "specific";
+    weekly_days: nullable<number[]>;
+    start_date: nullable<string>;
+    end_date: nullable<string>;
     created_at: string;
     updated_at: string;
-    categories: Nullable<Category>;
+    categories: nullable<Category>;
   }
 }
 

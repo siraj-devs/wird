@@ -132,7 +132,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
-  is_regular BOOLEAN NOT NULL DEFAULT FALSE,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  frequency TEXT NOT NULL DEFAULT 'daily' CHECK (frequency IN ('daily', 'weekly', 'specific')),
+  weekly_days INTEGER[],
   start_date TIMESTAMPTZ,
   end_date TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -156,7 +158,8 @@ CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
 
 -- Create indexes for tasks
 CREATE INDEX IF NOT EXISTS idx_tasks_category_id ON tasks(category_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_is_regular ON tasks(is_regular);
+CREATE INDEX IF NOT EXISTS idx_tasks_is_active ON tasks(is_active);
+CREATE INDEX IF NOT EXISTS idx_tasks_frequency ON tasks(frequency);
 CREATE INDEX IF NOT EXISTS idx_tasks_start_date ON tasks(start_date);
 CREATE INDEX IF NOT EXISTS idx_tasks_end_date ON tasks(end_date);
 

@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   } catch (error) {
     console.error("Discord OAuth error:", error);
     return NextResponse.redirect(

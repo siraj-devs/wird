@@ -39,18 +39,22 @@ export async function PUT(
   }
 
   const body = await request.json();
-  const { name, category_id, is_regular, start_date, end_date } = body;
+  const { name, category_id, is_active, frequency, weekly_days, start_date, end_date } = body;
 
   const updateData: {
     name?: string;
     category_id?: string;
-    is_regular?: boolean;
+    is_active?: boolean;
+    frequency?: string;
+    weekly_days?: number[] | null;
     start_date?: string;
     end_date?: string;
   } = {};
   if (name !== undefined) updateData.name = name;
   if (category_id !== undefined) updateData.category_id = category_id;
-  if (is_regular !== undefined) updateData.is_regular = is_regular;
+  if (is_active !== undefined) updateData.is_active = is_active;
+  if (frequency !== undefined) updateData.frequency = frequency;
+  if (weekly_days !== undefined) updateData.weekly_days = weekly_days;
   if (start_date !== undefined) updateData.start_date = start_date;
   if (end_date !== undefined) updateData.end_date = end_date;
 

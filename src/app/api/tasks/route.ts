@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { name, category_id, is_regular, start_date, end_date, assigned_user_ids } = body;
+  const { name, category_id, is_active, frequency, weekly_days, start_date, end_date, assigned_user_ids } = body;
 
   if (!name) {
     return NextResponse.json({ error: 'Task name is required' }, { status: 400 });
@@ -97,7 +97,9 @@ export async function POST(request: NextRequest) {
     .insert({
       name,
       category_id: category_id || null,
-      is_regular: is_regular || false,
+      is_active: is_active !== undefined ? is_active : true,
+      frequency: frequency || 'daily',
+      weekly_days: weekly_days || null,
       start_date: start_date || null,
       end_date: end_date || null,
     })

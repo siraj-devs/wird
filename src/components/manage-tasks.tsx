@@ -1,19 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { Activity, useState } from "react";
+import React, { useState } from "react";
 
-export default function AddTaskForm({
+export default function ManageTasks({
+  tasks,
   categories,
 }: {
+  tasks: Task[];
   categories: Category[];
 }) {
   const router = useRouter();
 
-  const [isOpen, setIsOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskName, setTaskName] = useState("");
   const [taskCategoryId, setTaskCategoryId] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -47,8 +49,9 @@ export default function AddTaskForm({
     return arabicRegex.test(text) && text.trim().length > 0;
   };
 
-  const handleCreateTask = async (e: React.SubmitEvent) => {
+  const handleEditTask = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedTask) return;
     setFormError("");
 
     if (!validateArabicText(taskName)) {
@@ -69,26 +72,41 @@ export default function AddTaskForm({
     };
 
     try {
-      const response = await fetch("/api/tasks", {
-        method: "POST",
+      const response = await fetch(`/api/tasks/${selectedTask.id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(taskData),
       });
 
       const data = await response.json();
 
-      if (!response.ok)
-        throw new Error(data.error || "Failed to submit request");
+      if (!response.ok) throw new Error(data.error || "Failed to update task");
 
       router.refresh();
-      setTaskName("");
-      setTaskCategoryId("");
-      setIsActive(true);
-      setFrequency("daily");
-      setSelectedDays([]);
-      setTaskStartDate("");
-      setTaskEndDate("");
-      setIsOpen(false);
+      setSelectedTask(null);
+    } catch {
+      setFormError("حدث خطأ. الرجاء المحاولة مرة أخرى");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!selectedTask) return;
+    setFormError("");
+    setSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/tasks/${selectedTask.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || "Failed to delete task");
+
+      router.refresh();
+      setSelectedTask(null);
     } catch {
       setFormError("حدث خطأ. الرجاء المحاولة مرة أخرى");
     } finally {
@@ -97,30 +115,92 @@ export default function AddTaskForm({
   };
 
   return (
-    <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="w-full cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700 md:w-fit"
-      >
-        مهمة جديدة
-      </button>
+    <div className="flex flex-wrap gap-4">
+      {tasks.map((task) => (
+        <button
+          key={task.id}
+          onClick={() => {
+            setSelectedTask(task);
+            setTaskName(task.name);
+            setTaskCategoryId(task.category_id || "");
+            setIsActive(task.is_active);
+            setFrequency(task.frequency);
+            setSelectedDays(task.weekly_days || []);
+            setTaskStartDate(
+              task.start_date ? task.start_date.split("T")[0] : "",
+            );
+            setTaskEndDate(task.end_date ? task.end_date.split("T")[0] : "");
+          }}
+          className="flex cursor-pointer items-center gap-2 rounded-lg bg-gray-50 px-4 py-2 hover:bg-gray-100"
+        >
+          <div className="flex flex-col items-start">
+            <h3 className="font-medium text-gray-900">{task.name}</h3>
+            <div className="mt-1 flex gap-2">
+              {task.categories?.name && (
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                  {task.categories.name}
+                </span>
+              )}
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs ${
+                  task.frequency === "daily"
+                    ? "bg-green-100 text-green-700"
+                    : task.frequency === "weekly"
+                      ? "bg-purple-100 text-purple-700"
+                      : "bg-orange-100 text-orange-700"
+                }`}
+              >
+                {task.frequency === "daily"
+                  ? "يومي"
+                  : task.frequency === "weekly"
+                    ? "أسبوعي"
+                    : "أيام محددة"}
+              </span>
+              {task.is_active ? (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
+                  نشط
+                </span>
+              ) : (
+                <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-700">
+                  غير نشط
+                </span>
+              )}
+            </div>
+          </div>
+        </button>
+      ))}
 
-      <Activity mode={isOpen ? "visible" : "hidden"}>
+      {selectedTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-            <h3 className="mb-4 text-xl font-bold text-gray-900">
-              إنشاء مهمة جديدة
-            </h3>
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex justify-between">
+              <h3 className="text-xl font-bold text-gray-900">تعديل المهمة</h3>
 
-            {formError && (
-              <div className="mb-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-red-800">
-                <p className="text-sm">{formError}</p>
-              </div>
-            )}
+              <button
+                className="text-red-600"
+                onClick={() => handleDeleteTask()}
+                disabled={submitting}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="size-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                  />
+                </svg>
+              </button>
+            </div>
 
-            <form onSubmit={handleCreateTask} className="space-y-4">
+            <form onSubmit={handleEditTask} className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-700">
                   اسم المهمة <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -139,8 +219,8 @@ export default function AddTaskForm({
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  الفئة <span className="text-red-500">*</span>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  الفئة
                 </label>
                 <select
                   value={taskCategoryId}
@@ -160,7 +240,7 @@ export default function AddTaskForm({
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  التكرار
+                  التكرار <span className="text-red-500">*</span>
                 </label>
                 <div className="flex overflow-hidden rounded-lg border border-gray-200">
                   <button
@@ -168,14 +248,14 @@ export default function AddTaskForm({
                     onClick={() => setFrequency("daily")}
                     className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                       frequency === "daily"
-                        ? "bg-indigo-50 text-indigo-700"
+                        ? "bg-purple-50 text-purple-700"
                         : "bg-white text-gray-700 hover:bg-gray-50"
                     } relative border-r border-gray-200`}
                   >
                     {frequency === "daily" && (
                       <span className="absolute top-1/2 left-3 -translate-y-1/2">
                         <svg
-                          className="h-4 w-4 text-indigo-600"
+                          className="h-4 w-4 text-purple-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -196,14 +276,14 @@ export default function AddTaskForm({
                     onClick={() => setFrequency("weekly")}
                     className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                       frequency === "weekly"
-                        ? "bg-indigo-50 text-indigo-700"
+                        ? "bg-purple-50 text-purple-700"
                         : "bg-white text-gray-700 hover:bg-gray-50"
                     } relative border-r border-gray-200`}
                   >
                     {frequency === "weekly" && (
                       <span className="absolute top-1/2 left-3 -translate-y-1/2">
                         <svg
-                          className="h-4 w-4 text-indigo-600"
+                          className="h-4 w-4 text-purple-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -224,14 +304,14 @@ export default function AddTaskForm({
                     onClick={() => setFrequency("specific")}
                     className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                       frequency === "specific"
-                        ? "bg-indigo-50 text-indigo-700"
+                        ? "bg-purple-50 text-purple-700"
                         : "bg-white text-gray-700 hover:bg-gray-50"
                     } relative`}
                   >
                     {frequency === "specific" && (
                       <span className="absolute top-1/2 left-3 -translate-y-1/2">
                         <svg
-                          className="h-4 w-4 text-indigo-600"
+                          className="h-4 w-4 text-purple-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -252,7 +332,7 @@ export default function AddTaskForm({
 
               {frequency === "weekly" && (
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  <label className="mb-2 block text-sm font-medium text-gray-900">
                     اختر أيام الأسبوع
                   </label>
                   <div className="grid grid-cols-7 gap-2">
@@ -263,7 +343,7 @@ export default function AddTaskForm({
                         onClick={() => toggleDay(day.id)}
                         className={`rounded-lg px-2 py-2 text-xs font-medium transition-colors ${
                           selectedDays.includes(day.id)
-                            ? "bg-indigo-600 text-white"
+                            ? "bg-purple-600 text-white"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         }`}
                       >
@@ -277,20 +357,18 @@ export default function AddTaskForm({
               {frequency === "specific" && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                    <label className="mb-2 block text-sm font-medium text-gray-900">
                       تاريخ البداية
                     </label>
                     <input
                       type="date"
-                      lang="ar"
-                      dir="rtl"
                       value={taskStartDate}
                       onChange={(e) => setTaskStartDate(e.target.value)}
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                    <label className="mb-2 block text-sm font-medium text-gray-900">
                       تاريخ النهاية
                     </label>
                     <input
@@ -303,14 +381,27 @@ export default function AddTaskForm({
                 </div>
               )}
 
-              <div className="flex items-center justify-between rounded-lg bg-white py-3">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700">
-                    تفعيل المهمة
-                  </h4>
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    عندما تكون المهمة نشطة، يمكن للأعضاء مشاهدته
-                  </p>
+              <div className="flex items-center justify-between rounded-lg bg-white px-4 py-3">
+                <div className="flex items-start gap-2">
+                  <svg
+                    className="mt-0.5 h-4 w-4 text-gray-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900">
+                      جعل المهمة خاصة
+                    </h4>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      عندما تكون المهمة خاصة، لا يمكن مشاهدتها إلا بدعوة
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -322,36 +413,35 @@ export default function AddTaskForm({
                   aria-checked={isActive}
                 >
                   <span
-                    className={`inline-block size-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
                       isActive ? "-translate-x-5.5" : "-translate-x-0.5"
                     }`}
                   />
                 </button>
               </div>
 
+              {formError && (
+                <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-red-800">
+                  <p className="text-sm">{formError}</p>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="flex-1 cursor-pointer rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={submitting || !selectedTask}
+                  className="flex-1 rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {submitting ? "جاري الإنشاء..." : "إنشاء مهمة"}
+                  {submitting ? "جاري التعديل..." : "تعديل المهمة"}
                 </button>
                 <button
                   type="button"
                   disabled={submitting}
                   onClick={() => {
-                    setIsOpen(false);
+                    setSelectedTask(null);
                     setFormError("");
-                    setTaskName("");
-                    setTaskCategoryId("");
-                    setIsActive(true);
-                    setFrequency("daily");
-                    setSelectedDays([]);
-                    setTaskStartDate("");
-                    setTaskEndDate("");
                   }}
-                  className="cursor-pointer rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   إلغاء
                 </button>
@@ -359,7 +449,7 @@ export default function AddTaskForm({
             </form>
           </div>
         </div>
-      </Activity>
-    </>
+      )}
+    </div>
   );
 }
