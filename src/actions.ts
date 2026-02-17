@@ -53,7 +53,7 @@ export const getTasks = async () => {
     const { data, error } = await supabaseAdmin
       .from("tasks")
       .select("*,categories(*)")
-      .order("created_at", { ascending: false });
+      // .order("created_at", { ascending: false });
     if (error) throw error;
     const tasks = data as Task[];
     return tasks;

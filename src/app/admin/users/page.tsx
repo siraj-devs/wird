@@ -46,7 +46,7 @@ export default function AdminUsersPage() {
       const data = await response.json();
 
       if (!["admin", "owner"].includes(data.user.role)) {
-        router.push("/dashboard");
+        router.push("/");
         return;
       }
 
@@ -200,7 +200,7 @@ export default function AdminUsersPage() {
               Access Requests
             </button>
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/")}
               className="rounded-lg bg-gray-600 px-4 py-2 text-white transition hover:bg-gray-700"
             >
               Dashboard

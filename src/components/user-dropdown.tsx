@@ -15,14 +15,15 @@ export default function UserDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const toggle = () => setIsOpen((prev) => !prev);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
+      )
+        toggle();
     }
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -34,7 +35,7 @@ export default function UserDropdown({
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={toggle}
         className="flex cursor-pointer items-center gap-3 overflow-hidden rounded-full border-2 border-gray-200 transition-colors focus:outline-none"
       >
         {user.avatar_url ? (
@@ -63,11 +64,14 @@ export default function UserDropdown({
           </div>
 
           {user.role !== ROLES.GUEST && (
-            <nav className="flex flex-col text-sm text-gray-700 *:px-3 *:py-2 *:hover:bg-gray-50">
+            <nav
+              onClick={toggle}
+              className="flex flex-col text-sm text-gray-700 *:px-3 *:py-2 *:hover:bg-gray-50"
+            >
               <Link href="/tasks">مهامي</Link>
               {user.role !== ROLES.MEMBER && (
                 <>
-                  <Link href="/admin/tasks">إدارة المهام</Link>
+                  <Link href="/panel">إدارة المهام</Link>
                   <Link href="/admin/users">إدارة المستخدمين</Link>
                   <Link href="/admin/access-requests">طلبات الوصول</Link>
                 </>
