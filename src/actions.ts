@@ -14,22 +14,6 @@ export const getUser = async (id: string) => {
   }
 };
 
-export const getRequests = async (id: string) => {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from("access_requests")
-      .select("*")
-      .eq("user_id", id)
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    const requests = data as AccessRequest[];
-    const status = requests.at(0)?.status;
-    return { requests, status };
-  } catch {
-    return null;
-  }
-};
-
 export const getCategories = async () => {
   try {
     const { data, error } = await supabaseAdmin

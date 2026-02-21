@@ -18,28 +18,21 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const state = searchParams.get("state");
-
-  if (!code || !state) {
+  if (!code || !state)
     return NextResponse.redirect(
       new URL("/login?error=invalid_request", request.url),
     );
-  }
 
-  // Verify state
   const cookieStore = await cookies();
   const storedState = cookieStore.get("discord_oauth_state")?.value;
-
-  if (!storedState || storedState !== state) {
+  if (!storedState || storedState !== state)
     return NextResponse.redirect(
       new URL("/login?error=invalid_state", request.url),
     );
-  }
 
-  // Clear state cookie
   cookieStore.delete("discord_oauth_state");
 
   try {
-    // Exchange code for access token
     const tokenResponse = await fetchWithTimeout(
       "https://discord.com/api/oauth2/token",
       {
@@ -57,14 +50,11 @@ export async function GET(request: NextRequest) {
       },
     );
 
-    if (!tokenResponse.ok) {
-      throw new Error("Failed to exchange code for token");
-    }
+    if (!tokenResponse.ok) throw new Error("Failed to exchange code for token");
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Fetch user info
     const userResponse = await fetchWithTimeout(
       "https://discord.com/api/users/@me",
       {
@@ -74,18 +64,10 @@ export async function GET(request: NextRequest) {
       },
     );
 
-    if (!userResponse.ok) {
-      throw new Error("Failed to fetch user info");
-    }
+    if (!userResponse.ok) throw new Error("Failed to fetch user info");
 
     const discordUser: DiscordUser = await userResponse.json();
 
-    // Use admin client for database operations to bypass RLS
-    if (!supabaseAdmin) {
-      throw new Error("Supabase admin client not configured");
-    }
-
-    // Check if user exists in database
     const { data: existingUser } = await supabaseAdmin
       .from("users")
       .select("*")
@@ -95,7 +77,6 @@ export async function GET(request: NextRequest) {
     let userId: string;
 
     if (existingUser) {
-      // Update existing user
       userId = existingUser.id;
       await supabaseAdmin
         .from("users")
@@ -109,7 +90,6 @@ export async function GET(request: NextRequest) {
         })
         .eq("id", userId);
     } else {
-      // Create new user
       const { data: newUser, error } = await supabaseAdmin
         .from("users")
         .insert({
@@ -131,23 +111,17 @@ export async function GET(request: NextRequest) {
       userId = newUser.id;
     }
 
-    // Generate JWT token
     const token = generateToken({
       userId: userId,
       username: discordUser.username,
     });
-
-    // Set auth cookie
     await setAuthCookie(token);
-
-    // Store session in database
     await supabaseAdmin.from("sessions").insert({
       user_id: userId,
       token: token,
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
-    // Add user to Discord server
     try {
       await fetchWithTimeout(
         `https://discord.com/api/guilds/${env.DISCORD_GUILD_ID}/members/${discordUser.id}`,
@@ -163,7 +137,6 @@ export async function GET(request: NextRequest) {
         },
       );
     } catch (error) {
-      // Log error but don't fail authentication if server join fails
       console.error("Failed to add user to Discord server:", error);
     }
 

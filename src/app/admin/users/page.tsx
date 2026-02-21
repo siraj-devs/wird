@@ -13,19 +13,10 @@ interface User {
   created_at: string;
 }
 
-interface AccessRequest {
-  id: string;
-  user_id?: string;
-  full_name_arabic: string;
-  phone_number: string;
-  status: string;
-}
-
 export default function AdminUsersPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
-  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("");
@@ -51,7 +42,7 @@ export default function AdminUsersPage() {
       }
 
       setCurrentUser(data.user);
-      await Promise.all([fetchUsers(), fetchAccessRequests()]);
+      await Promise.all([fetchUsers()]);
     } catch (error) {
       console.error("Auth check failed:", error);
       router.push("/login");
@@ -69,18 +60,6 @@ export default function AdminUsersPage() {
       }
     } catch (error) {
       console.error("Failed to fetch users:", error);
-    }
-  };
-
-  const fetchAccessRequests = async () => {
-    try {
-      const response = await fetch("/api/access-requests");
-      if (response.ok) {
-        const data = await response.json();
-        setAccessRequests(data.requests);
-      }
-    } catch (error) {
-      console.error("Failed to fetch access requests:", error);
     }
   };
 
@@ -124,20 +103,6 @@ export default function AdminUsersPage() {
     }
   };
 
-  const getUserPhone = (userId: string) => {
-    const request = accessRequests.find(
-      (req) => req.user_id === userId && req.status === "approved",
-    );
-    return request?.phone_number || "N/A";
-  };
-
-  const getUserFullName = (userId: string) => {
-    const request = accessRequests.find(
-      (req) => req.user_id === userId && req.status === "approved",
-    );
-    return request?.full_name_arabic || "N/A";
-  };
-
   const getRoleBadgeClass = (role: string) => {
     switch (role) {
       case "owner":
@@ -152,19 +117,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getUserFullName(user.id)
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      getUserPhone(user.id).includes(searchTerm);
-
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-
-    return matchesSearch && matchesRole;
-  });
+  const filteredUsers = users;
 
   if (loading) {
     return (
@@ -192,12 +145,6 @@ export default function AdminUsersPage() {
               className="rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
             >
               Task Management
-            </button>
-            <button
-              onClick={() => router.push("/admin/access-requests")}
-              className="rounded-lg bg-purple-600 px-4 py-2 text-white transition hover:bg-purple-700"
-            >
-              Access Requests
             </button>
             <button
               onClick={() => router.push("/")}
@@ -300,12 +247,6 @@ export default function AdminUsersPage() {
                           )}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900">
-                      {getUserFullName(user.id)}
-                    </td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900">
-                      {getUserPhone(user.id)}
                     </td>
                     <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
                       {user.email || "N/A"}

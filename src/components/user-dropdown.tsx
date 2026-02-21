@@ -73,7 +73,6 @@ export default function UserDropdown({
                 <>
                   <Link href="/panel">إدارة المهام</Link>
                   <Link href="/admin/users">إدارة المستخدمين</Link>
-                  <Link href="/admin/access-requests">طلبات الوصول</Link>
                 </>
               )}
               <Link

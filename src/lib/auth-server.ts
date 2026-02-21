@@ -1,8 +1,8 @@
-import { cookies } from "next/headers";
-import { verifyToken, type JWTPayload } from "./auth";
 import jwt from "jsonwebtoken";
-import { ROLES } from "./roles";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { verifyToken, type JWTPayload } from "./auth";
+import { ROLES } from "./roles";
 
 const TOKEN_COOKIE_NAME = "auth_token";
 
@@ -48,5 +48,13 @@ export async function checkRole(
   const { getUser } = await import("@/actions");
   const id = init.id ?? (await getIdFromToken());
   const user = init.user ?? (await getUser(id))!;
-  if (!roles.includes(user.role)) redirect("/");
+  if (!roles.includes(user.role)) {
+    if ([ROLES.NEWCOMER, ROLES.GUEST, ROLES.EXPELLED].includes(user.role))
+      redirect("/");
+    else if (user.role === ROLES.MEMBER) redirect("/tasks");
+    else if (user.role === ROLES.ADMIN || user.role === ROLES.OWNER)
+      redirect("/panel");
+    else redirect("/logout");
+  }
+  return user;
 }
