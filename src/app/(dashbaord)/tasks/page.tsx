@@ -21,7 +21,7 @@ export default async function Page() {
     };
   });
 
-  const tasks = await getTasks();
+  const tasks = await getTasks(true);
 
   const groups = Object.fromEntries(
     Object.entries(

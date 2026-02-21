@@ -48,15 +48,21 @@ export const getCategories = async () => {
   }
 };
 
-export const getTasks = async () => {
+export const getTasks = async (onlyActive: boolean = false) => {
   try {
+    if (onlyActive) {
+      const { data, error } = await supabaseAdmin
+        .from("tasks")
+        .select("*,categories(*)")
+        .eq("is_active", true);
+      if (error) throw error;
+      return data as Task[];
+    }
     const { data, error } = await supabaseAdmin
       .from("tasks")
-      .select("*,categories(*)")
-      // .order("created_at", { ascending: false });
+      .select("*,categories(*)");
     if (error) throw error;
-    const tasks = data as Task[];
-    return tasks;
+    return data as Task[];
   } catch (error) {
     console.error(error);
     return [];

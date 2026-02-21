@@ -23,7 +23,7 @@ export default function UserDropdown({
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       )
-        toggle();
+        setIsOpen(false);
     }
 
     document.addEventListener("mousedown", handleClickOutside);

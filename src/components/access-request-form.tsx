@@ -7,8 +7,8 @@ export default function AccessRequestForm() {
   const router = useRouter();
 
   const [showAccessForm, setShowAccessForm] = useState(false);
-  const [fullName, setFullName] = useState("المغربي");
-  const [phoneNumber, setPhoneNumber] = useState("677728707");
+  const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
