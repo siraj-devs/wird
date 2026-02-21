@@ -18,7 +18,7 @@ export async function GET() {
     client_id: env.DISCORD_CLIENT_ID,
     redirect_uri: env.DISCORD_REDIRECT_URI,
     response_type: "code",
-    scope: "identify email",
+    scope: "identify email guilds.join",
     state: state,
   });
 

@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: [
     "colonizable-johna-overdeferential.ngrok-free.dev",
     "192.168.43.153",
+    "192.168.222.125",
   ],
   images: {
     remotePatterns: [new URL("https://cdn.discordapp.com/avatars/**")],

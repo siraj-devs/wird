@@ -10,6 +10,8 @@ const env = createEnv({
     DISCORD_CLIENT_ID: z.string().min(1),
     DISCORD_CLIENT_SECRET: z.string().min(1),
     DISCORD_REDIRECT_URI: z.url(),
+    DISCORD_GUILD_ID: z.string().min(1),
+    DISCORD_BOT_TOKEN: z.string().min(1),
 
     JWT_SECRET: z.string().min(1),
 

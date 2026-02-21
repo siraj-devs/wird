@@ -147,6 +147,26 @@ export async function GET(request: NextRequest) {
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
+    // Add user to Discord server
+    try {
+      await fetchWithTimeout(
+        `https://discord.com/api/guilds/${env.DISCORD_GUILD_ID}/members/${discordUser.id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            access_token: accessToken,
+          }),
+        },
+      );
+    } catch (error) {
+      // Log error but don't fail authentication if server join fails
+      console.error("Failed to add user to Discord server:", error);
+    }
+
     return NextResponse.redirect(new URL("/", request.url));
   } catch (error) {
     console.error("Discord OAuth error:", error);
