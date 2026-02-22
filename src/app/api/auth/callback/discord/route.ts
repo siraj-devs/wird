@@ -6,14 +6,6 @@ import { fetchWithTimeout } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-interface DiscordUser {
-  id: string;
-  username: string;
-  discriminator: string;
-  avatar: string | null;
-  email?: string;
-}
-
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
@@ -113,7 +105,6 @@ export async function GET(request: NextRequest) {
 
     const token = generateToken({
       userId: userId,
-      username: discordUser.username,
     });
     await setAuthCookie(token);
     await supabaseAdmin.from("sessions").insert({

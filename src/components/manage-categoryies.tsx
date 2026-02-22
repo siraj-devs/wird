@@ -81,7 +81,7 @@ export default function ManageCategories({
   };
 
   return (
-    <div className="justify- flex flex-wrap gap-4 divide-gray-100">
+    <div className="flex flex-wrap gap-4 divide-gray-100">
       {categories.map((category) => (
         <button
           key={category.id}

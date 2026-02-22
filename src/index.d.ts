@@ -3,6 +3,18 @@ import { ROLES } from "@/lib/roles";
 declare global {
   type nullable<T> = T | null;
 
+  interface JWTPayload {
+    userId: string;
+  }
+
+  interface DiscordUser {
+    id: string;
+    username: string;
+    discriminator: string;
+    avatar: string | null;
+    email?: string;
+  }
+
   type Role = (typeof ROLES)[keyof typeof ROLES];
 
   interface User {
@@ -47,6 +59,17 @@ declare global {
     created_at: string;
     updated_at: string;
     categories: nullable<Category>;
+  }
+
+  interface UserTask {
+    id: string;
+    name: string;
+    frequency: "daily" | "weekly" | "specific";
+    weekly_days: nullable<number[]>;
+    start_date: nullable<string>;
+    end_date: nullable<string>;
+    category: any;
+    completed_at: any;
   }
 }
 

@@ -99,17 +99,18 @@ CREATE TABLE IF NOT EXISTS tasks (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Create user_tasks junction table (for task assignments)
+-- Create user_tasks junction table
 CREATE TABLE IF NOT EXISTS user_tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-  is_done BOOLEAN NOT NULL DEFAULT FALSE,
-  completed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE(user_id, task_id)
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_user_tasks_user_id ON user_tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_tasks_task_id ON user_tasks(task_id);
+
+ALTER TABLE user_tasks ENABLE ROW LEVEL SECURITY;
 
 -- Create indexes for categories
 CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
@@ -122,14 +123,10 @@ CREATE INDEX IF NOT EXISTS idx_tasks_start_date ON tasks(start_date);
 CREATE INDEX IF NOT EXISTS idx_tasks_end_date ON tasks(end_date);
 
 -- Create indexes for user_tasks
-CREATE INDEX IF NOT EXISTS idx_user_tasks_user_id ON user_tasks(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_tasks_task_id ON user_tasks(task_id);
-CREATE INDEX IF NOT EXISTS idx_user_tasks_is_done ON user_tasks(is_done);
 
 -- Enable RLS
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_tasks ENABLE ROW LEVEL SECURITY;
 
 -- Policies for categories
 CREATE POLICY "Members can view categories" 
@@ -196,10 +193,5 @@ CREATE TRIGGER update_categories_updated_at
 
 CREATE TRIGGER update_tasks_updated_at 
   BEFORE UPDATE ON tasks 
-  FOR EACH ROW 
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_user_tasks_updated_at 
-  BEFORE UPDATE ON user_tasks 
   FOR EACH ROW 
   EXECUTE FUNCTION update_updated_at_column();

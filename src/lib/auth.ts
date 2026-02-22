@@ -1,11 +1,6 @@
 import env from "@/env";
 import jwt from "jsonwebtoken";
 
-export interface JWTPayload {
-  userId: string;
-  username: string;
-}
-
 export function generateToken(payload: JWTPayload): string {
   return jwt.sign(payload, env.JWT_SECRET, {
     expiresIn: "7d",
