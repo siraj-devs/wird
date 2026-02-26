@@ -1,15 +1,20 @@
-import { getCategories, getTasks } from "@/actions";
+import { getCategories, getTasks, getUsers } from "@/actions";
 import AddCategoryForm from "@/components/add-category-form";
 import AddTaskForm from "@/components/add-task-form";
 import ManageCategories from "@/components/manage-categoryies";
 import ManageTasks from "@/components/manage-tasks";
+import ManageUsers from "@/components/manage-users";
 import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
 
 export default async function Page() {
-  await checkRole([ROLES.OWNER, ROLES.ADMIN]);
+  const {id} = await checkRole([ROLES.OWNER, ROLES.ADMIN]);
 
-  const [categories, tasks] = await Promise.all([getCategories(), getTasks()]);
+  const [categories, tasks, users] = await Promise.all([
+    getCategories(),
+    getTasks(),
+    getUsers(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -28,6 +33,11 @@ export default async function Page() {
         </div>
 
         <ManageTasks tasks={tasks} categories={categories} />
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-lg">
+        <h2 className="mb-6 text-2xl font-bold text-gray-900">المستخدمون</h2>
+        <ManageUsers id={id} users={users} />
       </div>
     </div>
   );

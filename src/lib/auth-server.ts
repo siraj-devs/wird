@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifyToken, type JWTPayload } from "./auth";
+import { verifyToken } from "./auth";
 import { ROLES } from "./roles";
 
 const TOKEN_COOKIE_NAME = "auth_token";

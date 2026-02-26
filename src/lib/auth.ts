@@ -1,5 +1,6 @@
 import env from "@/env";
 import jwt from "jsonwebtoken";
+import { ROLES } from "./roles";
 
 export function generateToken(payload: JWTPayload): string {
   return jwt.sign(payload, env.JWT_SECRET, {
@@ -14,4 +15,8 @@ export function verifyToken(token: string): JWTPayload | null {
   } catch {
     return null;
   }
+}
+
+export function hasRole(user: User, roles: Array<`${ROLES}`>): boolean {
+  return roles.includes(user.role);
 }

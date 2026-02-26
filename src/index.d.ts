@@ -23,20 +23,11 @@ declare global {
     provider_id: string;
     role: Role;
     email: nullable<string>;
+    full_name: nullable<string>;
+    phone_number: nullable<string>;
     avatar_url: nullable<string>;
     created_at: string;
     updated_at: string;
-  }
-
-  interface AccessRequest {
-    id: string;
-    user_id: string;
-    full_name_arabic: string;
-    phone_number: string;
-    status: "pending" | "approved" | "denied" | "banned";
-    created_at: string;
-    reviewed_at?: string;
-    reviewed_by?: string;
   }
 
   interface Category {

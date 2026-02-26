@@ -1,104 +1,43 @@
+import { verifyToken } from "@/lib/auth";
+import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
+import { APIError } from "@/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  const token = request.cookies.get("auth_token")?.value;
-
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Verify user session
-  const { data: session } = await supabaseAdmin
-    .from("sessions")
-    .select("user_id")
-    .eq("token", token)
-    .gte("expires_at", new Date().toISOString())
-    .single();
-
-  if (!session) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
-  }
-
-  // Get user role
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("role")
-    .eq("id", session.user_id)
-    .single();
-
-  if (!user || !["admin", "owner"].includes(user.role)) {
-    return NextResponse.json(
-      { error: "Forbidden - Admin role required" },
-      { status: 403 },
-    );
-  }
-
-  // Get all users with their roles
-  const { data: users, error } = await supabaseAdmin
-    .from("users")
-    .select("id, username, email, role, avatar_url, created_at")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ users });
-}
-
 export async function PATCH(request: NextRequest) {
-  const token = request.cookies.get("auth_token")?.value;
-
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Verify user session
-  const { data: session } = await supabaseAdmin
-    .from("sessions")
-    .select("user_id")
-    .eq("token", token)
-    .gte("expires_at", new Date().toISOString())
-    .single();
-
-  if (!session) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
-  }
-
-  // Get request body
-  const body = await request.json();
-  const { fullName, phoneNumber } = body;
-
-  // Validate inputs
-  if (!fullName || !phoneNumber) {
-    return NextResponse.json(
-      { error: "Full name and phone number are required" },
-      { status: 400 },
-    );
-  }
-
-  // Validate Arabic text
-  const arabicRegex = /[\u0600-\u06FF]/;
-  if (!arabicRegex.test(fullName) || fullName.trim().length === 0) {
-    return NextResponse.json(
-      { error: "Full name must be in Arabic" },
-      { status: 400 },
-    );
-  }
-
-  // Validate Moroccan phone number
-  const cleanPhone = phoneNumber.replace(/\s/g, "");
-  const phoneRegex = /^[5-7]\d{8}$/;
-  if (!phoneRegex.test(cleanPhone)) {
-    return NextResponse.json(
-      { error: "Invalid Moroccan phone number" },
-      { status: 400 },
-    );
-  }
-
   try {
-    // Update user profile and change role from newcomer to guest
+    const token = request.cookies.get("auth_token")?.value;
+    if (!token) throw new APIError(401, "Unauthorized");
+
+    const payload = verifyToken(token);
+    if (!payload) throw new APIError(401, "Unauthorized");
+
+    const { data: user } = await supabaseAdmin
+      .from("users")
+      .select("role")
+      .eq("id", payload.userId)
+      .single();
+
+
+
+    if (!user || user.role !== ROLES.NEWCOMER)
+      throw new APIError(403, "Forbidden");
+
+    const body = await request.json();
+    const { fullName, phoneNumber } = body;
+
+    if (!fullName || !phoneNumber)
+      throw new APIError(400, "Full name and phone number are required");
+
+    const arabicRegex = /[\u0600-\u06FF]/;
+    if (!arabicRegex.test(fullName) || fullName.trim().length === 0)
+      throw new APIError(400, "Full name must be in Arabic");
+
+    const cleanPhone = phoneNumber.replace(/\s/g, "");
+    const phoneRegex = /^\+212[5-7]\d{8}$/;
+    if (!phoneRegex.test(cleanPhone))
+      throw new APIError(400, "Invalid Moroccan phone number");
+
     const { data: updatedUser, error } = await supabaseAdmin
       .from("users")
       .update({
@@ -107,17 +46,12 @@ export async function PATCH(request: NextRequest) {
         role: "guest",
         updated_at: new Date().toISOString(),
       })
-      .eq("id", session.user_id)
+      .eq("id", payload.userId)
       .select()
       .single();
 
-    if (error) {
-      console.error("Error updating user profile:", error);
-      return NextResponse.json(
-        { error: "Failed to update profile" },
-        { status: 500 },
-      );
-    }
+    if (error)
+      throw new APIError(500, "Failed to update profile" + error.message);
 
     return NextResponse.json({
       message: "Profile updated successfully",

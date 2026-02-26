@@ -46,7 +46,7 @@ export default function OnboardingForm() {
         },
         body: JSON.stringify({
           fullName: fullName.trim(),
-          phoneNumber: phoneNumber.replace(/\s/g, ""),
+          phoneNumber: "+212" + phoneNumber.replace(/\s/g, ""),
         }),
       });
 

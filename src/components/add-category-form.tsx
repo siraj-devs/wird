@@ -10,7 +10,7 @@ export default function AddCategoryForm() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
-  const [categoryName, setCategoryName] = useState("المغربي");
+  const [categoryName, setCategoryName] = useState("");
 
   const validateArabicText = (text: string) => {
     const arabicRegex = /[\u0600-\u06FF]/;

@@ -2,7 +2,7 @@ import LoginLink from "@/components/login-link";
 import { getCurrentUser } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
 
-export default async function LoginPage() {
+export default async function Page() {
   const user = await getCurrentUser();
   if (user) redirect("/");
 

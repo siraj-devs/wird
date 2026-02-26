@@ -34,3 +34,25 @@ button {
     opacity: 0.625;
   }
 }
+
+/* select {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 0.375rem;
+  background-color: #fff;
+  color: #333;
+}
+
+
+
+@supports selector(select::picker-icon) {
+  select::picker-icon {
+    color: red;
+  }
+} */
+
+
+  /* select::picker(select) {
+    @apply bg-red-500
+  } */
+
