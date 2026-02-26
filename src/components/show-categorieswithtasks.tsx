@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { Button } from "./ui/Button";
 
 export default function ShowCategoriesWithTasks({
   categories,
@@ -106,7 +107,7 @@ export default function ShowCategoriesWithTasks({
                 <label
                   key={task.id}
                   htmlFor={`check-${task.id}`}
-                  className="inline-flex cursor-pointer items-center gap-4 rounded-lg border border-gray-100 bg-gray-50 px-2 py-3 hover:border-indigo-200 has-checked:border-green-100 has-checked:bg-green-50 has-checked:text-green-900"
+                  className="inline-flex cursor-pointer items-center gap-4 rounded-lg border border-gray-100 bg-gray-50 px-2 py-3 hover:border-primary-200 has-checked:border-green-100 has-checked:bg-green-50 has-checked:text-green-900"
                 >
                   <div className="relative flex items-center">
                     <input
@@ -156,20 +157,22 @@ export default function ShowCategoriesWithTasks({
             </div>
 
             <div className="flex items-center gap-3">
-              <button
+              <Button
                 onClick={resetHandler}
                 disabled={saving}
-                className="bg- borde border-gray- active:bg--100 rounded-md text-sm font-medium text-indigo-700 transition-colors hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                variant="ghost"
+                className="text-sm"
               >
                 إعادة تعيين
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={saveHandler}
                 disabled={saving}
-                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 active:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
+                variant="success"
+                className="text-sm"
               >
                 {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

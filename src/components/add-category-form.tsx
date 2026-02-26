@@ -54,7 +54,7 @@ export default function AddCategoryForm() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="w-full cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700 md:w-fit"
+        className="w-full cursor-pointer rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700 md:w-fit"
       >
         فئة جديدة
       </button>
@@ -88,7 +88,7 @@ export default function AddCategoryForm() {
                   }}
                   placeholder="أدخل اسم الفئة بالعربية"
                   required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:outline-none"
                 />
               </div>
 
@@ -96,7 +96,7 @@ export default function AddCategoryForm() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 cursor-pointer rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 cursor-pointer rounded-md bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting ? "جاري الإنشاء..." : "إنشاء فئة"}
                 </button>

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { Activity, useState } from "react";
+import { Button } from "./ui/Button";
 
 export default function AddTaskForm({
   categories,
@@ -10,7 +11,7 @@ export default function AddTaskForm({
 }) {
   const router = useRouter();
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -98,12 +99,7 @@ export default function AddTaskForm({
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="w-full cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700 md:w-fit"
-      >
-        مهمة جديدة
-      </button>
+      <Button onClick={() => setIsOpen(true)}>مهمة جديدة</Button>
 
       <Activity mode={isOpen ? "visible" : "hidden"}>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -134,7 +130,7 @@ export default function AddTaskForm({
                   }}
                   placeholder="أدخل اسم المهمة بالعربية"
                   required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:outline-none"
                 />
               </div>
 
@@ -145,7 +141,7 @@ export default function AddTaskForm({
                 <select
                   value={taskCategoryId}
                   onChange={(e) => setTaskCategoryId(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:outline-none"
                 >
                   <option value="">لا توجد فئة</option>
                   {categories.map((category) => (
@@ -168,14 +164,14 @@ export default function AddTaskForm({
                     onClick={() => setFrequency("daily")}
                     className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                       frequency === "daily"
-                        ? "bg-indigo-50 text-indigo-700"
+                        ? "bg-purple-50 text-purple-700"
                         : "bg-white text-gray-700 hover:bg-gray-50"
                     } relative border-r border-gray-200`}
                   >
                     {frequency === "daily" && (
                       <span className="absolute top-1/2 left-3 -translate-y-1/2">
                         <svg
-                          className="h-4 w-4 text-indigo-600"
+                          className="h-4 w-4 text-purple-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -191,19 +187,20 @@ export default function AddTaskForm({
                       يومي
                     </span>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setFrequency("weekly")}
                     className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                       frequency === "weekly"
-                        ? "bg-indigo-50 text-indigo-700"
+                        ? "bg-violet-50 text-violet-700"
                         : "bg-white text-gray-700 hover:bg-gray-50"
                     } relative border-r border-gray-200`}
                   >
                     {frequency === "weekly" && (
                       <span className="absolute top-1/2 left-3 -translate-y-1/2">
                         <svg
-                          className="h-4 w-4 text-indigo-600"
+                          className="h-4 w-4 text-violet-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -219,6 +216,7 @@ export default function AddTaskForm({
                       أسبوعي
                     </span>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setFrequency("specific")}
@@ -263,7 +261,7 @@ export default function AddTaskForm({
                         onClick={() => toggleDay(day.id)}
                         className={`rounded-lg px-2 py-2 text-xs font-medium transition-colors ${
                           selectedDays.includes(day.id)
-                            ? "bg-indigo-600 text-white"
+                            ? "bg-violet-600 text-white"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         }`}
                       >
@@ -286,7 +284,7 @@ export default function AddTaskForm({
                       dir="rtl"
                       value={taskStartDate}
                       onChange={(e) => setTaskStartDate(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
                   <div>
@@ -297,7 +295,7 @@ export default function AddTaskForm({
                       type="date"
                       value={taskEndDate}
                       onChange={(e) => setTaskEndDate(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -312,6 +310,7 @@ export default function AddTaskForm({
                     عندما تكون المهمة نشطة، يمكن للأعضاء مشاهدته
                   </p>
                 </div>
+                <input type="checkbox" name="is_active" />
                 <button
                   type="button"
                   onClick={() => setIsActive(!isActive)}
@@ -330,15 +329,12 @@ export default function AddTaskForm({
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 cursor-pointer rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                >
+                <Button type="submit" disabled={submitting} className="flex-1">
                   {submitting ? "جاري الإنشاء..." : "إنشاء مهمة"}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  type="reset"
+                  variant="secondary"
                   disabled={submitting}
                   onClick={() => {
                     setIsOpen(false);
@@ -351,10 +347,9 @@ export default function AddTaskForm({
                     setTaskStartDate("");
                     setTaskEndDate("");
                   }}
-                  className="cursor-pointer rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   إلغاء
-                </button>
+                </Button>
               </div>
             </form>
           </div>

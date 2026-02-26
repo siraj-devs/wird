@@ -94,7 +94,7 @@ export default function ManageCategories({
           <h3>
             {category.name}
             {category.tasks > 0 && (
-              <span className="mr-6 rounded-full bg-indigo-100 px-1.5 py-0.5 text-center text-xs font-semibold text-indigo-900">
+              <span className="mr-6 rounded-full bg-primary-100 px-1.5 py-0.5 text-center text-xs font-semibold text-primary-900">
                 {category.tasks}
               </span>
             )}
@@ -156,7 +156,7 @@ export default function ManageCategories({
                 <button
                   type="submit"
                   disabled={submitting || !selectedCategory}
-                  className="flex-1 rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="flex-1 rounded-md bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:outline-none"
                 >
                   {submitting ? "جاري التعديل..." : "تعديل الفئة"}
                 </button>

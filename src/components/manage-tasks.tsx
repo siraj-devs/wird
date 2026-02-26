@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { Button } from "./ui/Button";
 
 export default function ManageTasks({
   tasks,
@@ -137,17 +138,17 @@ export default function ManageTasks({
             <h3 className="font-medium text-gray-900">{task.name}</h3>
             <div className="mt-1 flex gap-2">
               {task.categories?.name && (
-                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700">
                   {task.categories.name}
                 </span>
               )}
               <span
                 className={`rounded-full px-2 py-0.5 text-xs ${
                   task.frequency === "daily"
-                    ? "bg-green-100 text-green-700"
+                    ? "bg-purple-100 text-purple-700"
                     : task.frequency === "weekly"
-                      ? "bg-purple-100 text-purple-700"
-                      : "bg-orange-100 text-orange-700"
+                      ? "bg-violet-100 text-violet-700"
+                      : "bg-indigo-100 text-indigo-700"
                 }`}
               >
                 {task.frequency === "daily"
@@ -271,19 +272,20 @@ export default function ManageTasks({
                       يومي
                     </span>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setFrequency("weekly")}
                     className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                       frequency === "weekly"
-                        ? "bg-purple-50 text-purple-700"
+                        ? "bg-violet-50 text-violet-700"
                         : "bg-white text-gray-700 hover:bg-gray-50"
                     } relative border-r border-gray-200`}
                   >
                     {frequency === "weekly" && (
                       <span className="absolute top-1/2 left-3 -translate-y-1/2">
                         <svg
-                          className="h-4 w-4 text-purple-600"
+                          className="h-4 w-4 text-violet-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -299,19 +301,20 @@ export default function ManageTasks({
                       أسبوعي
                     </span>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setFrequency("specific")}
                     className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                       frequency === "specific"
-                        ? "bg-purple-50 text-purple-700"
+                        ? "bg-indigo-50 text-indigo-700"
                         : "bg-white text-gray-700 hover:bg-gray-50"
                     } relative`}
                   >
                     {frequency === "specific" && (
                       <span className="absolute top-1/2 left-3 -translate-y-1/2">
                         <svg
-                          className="h-4 w-4 text-purple-600"
+                          className="h-4 w-4 text-indigo-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -343,7 +346,7 @@ export default function ManageTasks({
                         onClick={() => toggleDay(day.id)}
                         className={`rounded-lg px-2 py-2 text-xs font-medium transition-colors ${
                           selectedDays.includes(day.id)
-                            ? "bg-purple-600 text-white"
+                            ? "bg-violet-600 text-white"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         }`}
                       >
@@ -381,27 +384,14 @@ export default function ManageTasks({
                 </div>
               )}
 
-              <div className="flex items-center justify-between rounded-lg bg-white px-4 py-3">
-                <div className="flex items-start gap-2">
-                  <svg
-                    className="mt-0.5 h-4 w-4 text-gray-400"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">
-                      جعل المهمة خاصة
-                    </h4>
-                    <p className="mt-0.5 text-xs text-gray-500">
-                      عندما تكون المهمة خاصة، لا يمكن مشاهدتها إلا بدعوة
-                    </p>
-                  </div>
+              <div className="flex items-center justify-between rounded-lg bg-white py-3">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700">
+                    تفعيل المهمة
+                  </h4>
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    عندما تكون المهمة نشطة، يمكن للأعضاء مشاهدته
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -413,7 +403,7 @@ export default function ManageTasks({
                   aria-checked={isActive}
                 >
                   <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                    className={`inline-block size-5 transform rounded-full bg-white shadow-sm transition-transform ${
                       isActive ? "-translate-x-5.5" : "-translate-x-0.5"
                     }`}
                   />
@@ -427,24 +417,24 @@ export default function ManageTasks({
               )}
 
               <div className="flex gap-3 pt-2">
-                <button
+                <Button
                   type="submit"
                   disabled={submitting || !selectedTask}
-                  className="flex-1 rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1"
                 >
                   {submitting ? "جاري التعديل..." : "تعديل المهمة"}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  type="reset"
                   disabled={submitting}
                   onClick={() => {
                     setSelectedTask(null);
                     setFormError("");
                   }}
-                  className="rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  variant="secondary"
                 >
                   إلغاء
-                </button>
+                </Button>
               </div>
             </form>
           </div>

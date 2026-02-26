@@ -117,43 +117,45 @@ export default function ManageUsers({
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
                     {user.full_name || "غير متوفر"}
                   </td>
-                  <td dir={user.phone_number ? "ltr" : "rtl"} className="px-6 rtl:text-right  py-4 text-sm whitespace-nowrap text-gray-500">
+                  <td
+                    dir={user.phone_number ? "ltr" : "rtl"}
+                    className="px-6 py-4 text-sm whitespace-nowrap text-gray-500 rtl:text-right"
+                  >
                     {user.phone_number || "غير متوفر"}
                   </td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
                     {user.email || "غير متوفر"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="relative inline-block">
-                      <select
-                        value={user.role}
-                        onKeyDown={(e) => {
-                          if (user.id === id) e.preventDefault();
-                        }}
-                        onMouseDown={(e) => {
-                          if (user.id === id) e.preventDefault();
-                        }}
-                        onTouchStart={(e) => {
-                          if (user.id === id) e.preventDefault();
-                        }}
-                        disabled={user.id === id || updating === user.id}
-                        onChange={(e) =>
-                          handleRoleChange(user.id, e.currentTarget.value)
-                        }
-                        className={`cursor-pointer appearance-none rounded-full border px-3 py-1.5 text-xs font-semibold focus:outline-none disabled:border-gray-300 disabled:bg-gray-50 disabled:text-gray-400 ${getRoleBadgeClass(user.role)}`}
-                      >
-                        {Object.values(ROLES).map((role) => (
-                          <option
-                            key={role}
-                            value={role}
-                            disabled={role === user.role}
-                            className="bg-white text-black disabled:text-gray-300"
-                          >
-                            {getRoleLabel(role)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <td className="px-6 py-4">
+                    {/* <div className="relative bg-red-500 inline-block"> */}
+                    <select
+                      value={user.role}
+                      onKeyDown={(e) => {
+                        if (user.id === id) e.preventDefault();
+                      }}
+                      onMouseDown={(e) => {
+                        if (user.id === id) e.preventDefault();
+                      }}
+                      onTouchStart={(e) => {
+                        if (user.id === id) e.preventDefault();
+                      }}
+                      disabled={user.id === id || updating === user.id}
+                      onChange={(e) =>
+                        handleRoleChange(user.id, e.currentTarget.value)
+                      }
+                      className={`w-full cursor-pointer appearance-none rounded-full border px-3 py-1.5 text-xs font-semibold focus:outline-none disabled:border-gray-300 disabled:bg-gray-50 disabled:text-gray-400 ${getRoleBadgeClass(user.role)}`}
+                    >
+                      {Object.values(ROLES).map((role) => (
+                        <option
+                          key={role}
+                          value={role}
+                          disabled={role === user.role}
+                          className="bg-white text-black disabled:text-gray-300"
+                        >
+                          {getRoleLabel(role)}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
                     {new Date(user.created_at).toLocaleDateString("ar-MA")}

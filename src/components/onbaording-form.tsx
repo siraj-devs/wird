@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { Button } from "./ui/Button";
 
 export default function OnboardingForm() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function OnboardingForm() {
 
       if (!response.ok)
         throw new Error(data.error || "Failed to update profile");
-  
+
       router.refresh();
     } catch {
       setFormError("حدث خطأ. الرجاء المحاولة مرة أخرى");
@@ -95,7 +96,7 @@ export default function OnboardingForm() {
                 setFullName(value);
               }
             }}
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:outline-none"
             placeholder="مثال: محمد بن أحمد"
           />
         </div>
@@ -120,19 +121,15 @@ export default function OnboardingForm() {
                   setPhoneNumber(value);
                 }
               }}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:outline-none"
               placeholder="677734999"
             />
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full cursor-pointer rounded-lg bg-indigo-600 px-4 py-3 text-white transition-colors hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <Button type="submit" disabled={submitting} className="w-full">
           {submitting ? "جاري الحفظ..." : "حفظ"}
-        </button>
+        </Button>
       </form>
 
       <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-6 py-4">

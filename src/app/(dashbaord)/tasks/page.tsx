@@ -56,7 +56,7 @@ export default async function Page() {
           >
             <span
               className={`text-sm ${
-                day.isToday ? "text-indigo-500" : "text-neutral-400"
+                day.isToday ? "text-primary-500" : "text-neutral-400"
               }`}
             >
               {day.day}
@@ -64,7 +64,7 @@ export default async function Page() {
             <span
               className={`flex flex-col items-center justify-center rounded-md px-7 py-1 text-lg font-bold ${
                 day.isToday
-                  ? "border-2 border-white bg-indigo-500 text-white outline-2 outline-indigo-500"
+                  ? "border-2 border-white bg-primary-500 text-white outline-2 outline-primary-500"
                   : "bg-gray-50"
               } ${
                 day.isFuture
