@@ -79,7 +79,7 @@ export default async function Page({
     .eq("user_id", id)
     .in(
       "week_task_id",
-      weekTasks.map((wt) => wt.id)
+      weekTasks.map((wt) => wt.id),
     );
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -108,7 +108,7 @@ export default async function Page({
   const totalPossible = weekTasks.length * 7;
   const totalCompleted = Array.from(completionByTask.values()).reduce(
     (sum, days) => sum + days.size,
-    0
+    0,
   );
   const achievementPercent =
     totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0;
@@ -120,8 +120,8 @@ export default async function Page({
 
   return (
     <div className="mx-auto space-y-6 p-6" dir="rtl">
-      <div className="mx-auto max-w-4xl space-y-4">
-        <div className="flex max-w-4xl items-center justify-between gap-3">
+      <div className="mx-auto space-y-4">
+        <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold">
               {weekDays[0].toLocaleDateString("ar-MA", {
@@ -190,14 +190,15 @@ export default async function Page({
           )}
 
           {weekTasks.map((weekTask) => {
-            const completedDays = completionByTask.get(weekTask.id) ?? new Set();
+            const completedDays =
+              completionByTask.get(weekTask.id) ?? new Set();
 
             return (
               <div
                 key={weekTask.id}
                 className="grid grid-cols-10 gap-2 p-4 transition-colors"
               >
-                <div className="flex items-center col-span-2">
+                <div className="col-span-2 flex items-center">
                   <span className="truncate text-sm font-medium">
                     {weekTask.task_name}
                   </span>
@@ -223,7 +224,7 @@ export default async function Page({
                   );
                 })}
 
-                <div className="flex items-center col-span-1 justify-center">
+                <div className="col-span-1 flex items-center justify-center">
                   <span className="text-xs text-gray-500">
                     {completedDays.size}/{7}
                   </span>

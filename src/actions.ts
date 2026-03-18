@@ -281,6 +281,50 @@ export const getCurrentAndNextWeeksTasks = async (): Promise<
   }
 };
 
+export const getAllWeeksWithTasks = async (): Promise<
+  {
+    week: Week;
+    tasks: WeekTask[];
+  }[]
+> => {
+  try {
+    const { data: weeks, error: weeksError } = await supabaseAdmin
+      .from("weeks")
+      .select("*")
+      .order("start_date", { ascending: false });
+
+    if (weeksError) throw weeksError;
+
+    const normalizedWeeks = (weeks ?? []) as Week[];
+    if (normalizedWeeks.length === 0) return [];
+
+    const weekIds = normalizedWeeks.map((week) => week.id);
+
+    const { data: weekTasks, error: tasksError } = await supabaseAdmin
+      .from("week_tasks")
+      .select("*")
+      .in("week_id", weekIds)
+      .order("sort_order", { ascending: true });
+
+    if (tasksError) throw tasksError;
+
+    const groupedTasks = new Map<string, WeekTask[]>();
+    for (const task of (weekTasks ?? []) as WeekTask[]) {
+      const list = groupedTasks.get(task.week_id) ?? [];
+      list.push(task);
+      groupedTasks.set(task.week_id, list);
+    }
+
+    return normalizedWeeks.map((week) => ({
+      week,
+      tasks: groupedTasks.get(week.id) ?? [],
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
 export const getUsers = async () => {
   try {
     const { data: users, error } = await supabaseAdmin

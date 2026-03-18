@@ -1,7 +1,7 @@
 import { verifyToken } from "@/lib/auth";
 import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
-import { APIError } from "@/lib/utils";
+import { APIError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(
