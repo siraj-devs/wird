@@ -55,16 +55,20 @@ export default function ShowCategoriesWithTasks({
     setSaving(true);
 
     try {
-      const checkedTaskIds = Array.from(checkedTasks.entries())
+      const completedTasks = Array.from(checkedTasks.entries())
         .filter(([_, isChecked]) => isChecked)
-        .map(([taskId, _]) => taskId);
+        .map(([weekTaskId, _]) => {
+          return {
+            week_task_id: weekTaskId,
+          };
+        });
 
       const response = await fetch("/api/user-tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ taskIds: checkedTaskIds }),
+        body: JSON.stringify(completedTasks),
       });
 
       if (!response.ok) throw new Error("Failed to save tasks");
@@ -136,7 +140,7 @@ export default function ShowCategoriesWithTasks({
                       </svg>
                     </span>
                   </div>
-                  {task.name}
+                  {task.task_name}
                 </label>
               ))}
             </div>

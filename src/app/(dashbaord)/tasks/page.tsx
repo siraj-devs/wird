@@ -26,7 +26,7 @@ export default async function Page() {
 
   const categories = Object.entries(
     tasks.reduce((groups: Record<string, typeof tasks>, task) => {
-      const category = task.category ?? "";
+      const category = task.category_name || "";
       if (!groups[category]) {
         groups[category] = [];
       }
@@ -41,7 +41,7 @@ export default async function Page() {
     })
     .map(([name, tasks]) => ({
       name,
-      completed: tasks.filter((task) => task.completed_at !== null).length,
+      completed: tasks.filter((task) => task.completed_at !== null && task.completed_at !== "").length,
       total: tasks.length,
       tasks: tasks,
     }));

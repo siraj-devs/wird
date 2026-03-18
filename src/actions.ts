@@ -18,14 +18,10 @@ export const getCategories = async () => {
   try {
     const { data, error } = await supabaseAdmin
       .from("categories")
-      .select("*,tasks(*,categories(*))")
+      .select("*")
       .order("name", { ascending: true });
     if (error) throw error;
-    const categories: Category[] = data.map((category) => ({
-      ...category,
-      tasks: category.tasks.length ?? 0,
-    }));
-    return categories;
+    return data as Category[];
   } catch (error) {
     console.error(error);
     return [];
@@ -36,7 +32,7 @@ export const getTasks = async () => {
   try {
     const { data, error } = await supabaseAdmin
       .from("tasks")
-      .select("*,categories(*)");
+      .select("*");
     if (error) throw error;
     return data as Task[];
   } catch (error) {
@@ -45,31 +41,240 @@ export const getTasks = async () => {
   }
 };
 
+const formatDateOnly = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// Helper to get Saturday of a given week
+const getWeekStart = (date: Date): Date => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = (day + 1) % 7; // Days since Saturday
+  d.setDate(d.getDate() - diff);
+  return d;
+};
+
+// Get or create a week record
+export const getOrCreateWeek = async (date: Date): Promise<Week | null> => {
+  try {
+    const weekStart = getWeekStart(date);
+    const startDateStr = formatDateOnly(weekStart);
+
+    // Try to find existing week
+    const { data: existing } = await supabaseAdmin
+      .from("weeks")
+      .select("*")
+      .eq("start_date", startDateStr)
+      .single();
+
+    if (existing) return existing as Week;
+
+    // Create new week
+    const { data, error } = await supabaseAdmin
+      .from("weeks")
+      .insert({
+        start_date: startDateStr,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Week;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+// Get week tasks with completion status for a user
+export const getWeekTasksForUser = async (
+  weekId: string,
+  userId: string
+): Promise<(WeekTask & { completed_at: string | null })[]> => {
+  try {
+    const { data: weekTasks, error } = await supabaseAdmin
+      .from("week_tasks")
+      .select("*")
+      .eq("week_id", weekId)
+      .order("sort_order", { ascending: true });
+
+    if (error) throw error;
+
+    // Get user completions for this week
+    const { data: completions } = await supabaseAdmin
+      .from("user_tasks")
+      .select("week_task_id, completed_at")
+      .eq("user_id", userId)
+      .in(
+        "week_task_id",
+        weekTasks.map((wt) => wt.id)
+      );
+
+    // Create a map of completions
+    const completionMap = new Map(
+      completions?.map((c) => [c.week_task_id, c.completed_at]) ?? []
+    );
+
+    // Merge data
+    return weekTasks.map((wt) => ({
+      ...wt,
+      completed_at: completionMap.get(wt.id) ?? null,
+    })) as (WeekTask & { completed_at: string | null })[];
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
+// Get user tasks for today (compatible with old structure)
 export const getUserTasks = async (userId: string): Promise<UserTask[]> => {
   try {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const { data, error } = await supabaseAdmin
-      .from("tasks")
-      .select("*,categories(*),user_tasks(*)")
-      .eq("is_active", true)
-      .eq("user_tasks.user_id", userId)
-      .gte("user_tasks.completed_at", today.toISOString())
-      .lt("user_tasks.completed_at", tomorrow.toISOString());
-    if (error) throw error;
-    return data.map((task) => ({
-      id: task.id as string,
-      name: task.name as string,
-      frequency: task.frequency as "daily" | "weekly" | "specific",
-      weekly_days: task.weekly_days as nullable<number[]>,
-      start_date: task.start_date as nullable<string>,
-      end_date: task.end_date as nullable<string>,
-      category: task.categories?.name ?? (null as nullable<string>),
-      completed_at:
-        task.user_tasks.at(0)?.completed_at ?? (null as nullable<string>),
+    const week = await getOrCreateWeek(today);
+    if (!week) return [];
+
+    const weekTasks = await getWeekTasksForUser(week.id, userId);
+
+    // Filter for today based on task_days array
+    const todayDayOfWeek = ((today.getDay() + 6) % 7) + 1; // 1=Mon, 7=Sun
+
+    return weekTasks
+      .filter(
+        (wt) => !wt.task_days || wt.task_days.length === 0 || wt.task_days.includes(todayDayOfWeek)
+      )
+      .map((wt) => ({
+        id: wt.id,
+        user_id: userId,
+        week_task_id: wt.id,
+        task_name: wt.task_name,
+        category_name: wt.category_name ?? null,
+        completed_at: wt.completed_at ?? "",
+      })) as UserTask[];
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
+// Clone week tasks from one week to another
+export const cloneWeekTasks = async (
+  sourceWeekId: string,
+  targetWeekId: string
+): Promise<boolean> => {
+  try {
+    const { data: sourceWeekTasks, error: fetchError } = await supabaseAdmin
+      .from("week_tasks")
+      .select("*")
+      .eq("week_id", sourceWeekId);
+
+    if (fetchError || !sourceWeekTasks) return false;
+
+    const tasksToClone = sourceWeekTasks.map((wt) => ({
+      week_id: targetWeekId,
+      task_id: wt.task_id,
+      task_name: wt.task_name,
+      task_days: wt.task_days,
+      category_id: wt.category_id,
+      category_name: wt.category_name,
+      sort_order: wt.sort_order,
     }));
+
+    const { error: insertError } = await supabaseAdmin
+      .from("week_tasks")
+      .insert(tasksToClone);
+
+    if (insertError) return false;
+
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+};
+
+// Get all weeks
+export const getWeeks = async (): Promise<Week[]> => {
+  try {
+    const { data: weeks, error } = await supabaseAdmin
+      .from("weeks")
+      .select("*")
+      .order("start_date", { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+    return weeks as Week[];
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
+export const getCurrentAndNextWeeksTasks = async (): Promise<
+  {
+    label: string;
+    week: Week;
+    tasks: WeekTask[];
+  }[]
+> => {
+  try {
+    const now = new Date();
+    const currentWeek = await getOrCreateWeek(now);
+    if (!currentWeek) return [];
+
+    const nextWeekDate = new Date(getWeekStart(now));
+    nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+    const nextWeek = await getOrCreateWeek(nextWeekDate);
+    if (!nextWeek) {
+      const { data: currentWeekTasks, error: currentError } = await supabaseAdmin
+        .from("week_tasks")
+        .select("*")
+        .eq("week_id", currentWeek.id)
+        .order("sort_order", { ascending: true });
+
+      if (currentError) throw currentError;
+
+      return [
+        {
+          label: "الأسبوع الحالي",
+          week: currentWeek,
+          tasks: (currentWeekTasks ?? []) as WeekTask[],
+        },
+      ];
+    }
+
+    const weekIds = [currentWeek.id, nextWeek.id];
+
+    const { data: weekTasks, error } = await supabaseAdmin
+      .from("week_tasks")
+      .select("*")
+      .in("week_id", weekIds)
+      .order("sort_order", { ascending: true });
+
+    if (error) throw error;
+
+    const grouped = new Map<string, WeekTask[]>();
+    for (const task of (weekTasks ?? []) as WeekTask[]) {
+      const list = grouped.get(task.week_id) ?? [];
+      list.push(task);
+      grouped.set(task.week_id, list);
+    }
+
+    return [
+      {
+        label: "الأسبوع الحالي",
+        week: currentWeek,
+        tasks: grouped.get(currentWeek.id) ?? [],
+      },
+      {
+        label: "الأسبوع القادم",
+        week: nextWeek,
+        tasks: grouped.get(nextWeek.id) ?? [],
+      },
+    ];
   } catch (error) {
     console.error(error);
     return [];

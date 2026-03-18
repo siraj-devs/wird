@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { Activity, useState } from "react";
+import { Button } from "./ui/Button";
 
 export default function AddCategoryForm() {
   const router = useRouter();
@@ -52,22 +53,19 @@ export default function AddCategoryForm() {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="w-full cursor-pointer rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700 md:w-fit"
-      >
+      <Button onClick={() => setIsOpen(true)} className="w-full md:w-fit">
         فئة جديدة
-      </button>
+      </Button>
 
       <Activity mode={isOpen ? "visible" : "hidden"}>
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+        <div className="ds-modal-overlay">
+          <div className="ds-modal">
             <h3 className="mb-4 text-xl font-bold text-gray-900">
               إنشاء فئة جديدة
             </h3>
 
             {formError && (
-              <div className="mb-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+              <div className="ds-error mb-4">
                 <p className="text-sm">{formError}</p>
               </div>
             )}
@@ -88,30 +86,30 @@ export default function AddCategoryForm() {
                   }}
                   placeholder="أدخل اسم الفئة بالعربية"
                   required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                  className="ds-input"
                 />
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button
+                <Button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 cursor-pointer rounded-md bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1"
                 >
                   {submitting ? "جاري الإنشاء..." : "إنشاء فئة"}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="secondary"
                   disabled={submitting}
                   onClick={() => {
                     setIsOpen(false);
                     setFormError("");
                     setCategoryName("");
                   }}
-                  className="cursor-pointer rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   إلغاء
-                </button>
+                </Button>
               </div>
             </form>
           </div>

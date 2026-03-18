@@ -32,11 +32,3 @@ export async function fetchWithTimeout(
     throw error;
   }
 }
-
-export class APIError extends Error {
-  status: number;
-  constructor(status: number, message?: string) {
-    super(message ?? `API Error with status ${status}`);
-    this.status = status;
-  }
-}

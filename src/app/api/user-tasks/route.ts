@@ -23,10 +23,10 @@ export async function POST(request: NextRequest) {
   )
     throw new APIError(403, "Forbidden - Member role required");
 
-  const body = await request.json();
-  const { taskIds } = body;
-  if (!Array.isArray(taskIds))
-    throw new APIError(400, "taskIds must be an array");
+  const userTasks = await request.json();
+
+  if (!Array.isArray(userTasks))
+    throw new APIError(400, "body must be an array");
 
   try {
     const today = new Date();
@@ -43,23 +43,23 @@ export async function POST(request: NextRequest) {
 
     if (deleteError) throw new APIError(500, "Failed to delete existing tasks");
 
-    if (taskIds.length > 0) {
-      const userTasksToInsert = taskIds.map((taskId) => ({
-        user_id: payload.userId,
-        task_id: taskId,
-        completed_at: new Date().toISOString(),
-      }));
-
+    if (userTasks.length > 0) {
       const { error: insertError } = await supabaseAdmin
         .from("user_tasks")
-        .insert(userTasksToInsert);
+        .insert(
+          userTasks.map((task) => ({
+            user_id: payload.userId,
+            week_task_id: task.week_task_id,
+            completed_at: new Date().toISOString(),
+          })),
+        );
 
       if (insertError) throw new APIError(500, "Failed to insert new tasks");
     }
 
     return NextResponse.json({
       message: "Tasks saved successfully",
-      count: taskIds.length,
+      count: userTasks.length,
     });
   } catch (error: unknown) {
     if (error instanceof APIError) {

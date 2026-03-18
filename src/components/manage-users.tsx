@@ -2,6 +2,7 @@
 
 import { getRoleLabel, ROLES } from "@/lib/roles";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -62,7 +63,7 @@ export default function ManageUsers({
 
   return (
     <div>
-      <div className="overflow-hidden rounded-lg bg-white shadow">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -89,7 +90,12 @@ export default function ManageUsers({
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
+                <Link
+                  role="tr"
+                  key={user.id}
+                  href={`/tasks/${user.id}`}
+                  className="table-row hover:bg-gray-50"
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {user.avatar_url ? (
@@ -127,7 +133,6 @@ export default function ManageUsers({
                     {user.email || "غير متوفر"}
                   </td>
                   <td className="px-6 py-4">
-                    {/* <div className="relative bg-red-500 inline-block"> */}
                     <select
                       value={user.role}
                       onKeyDown={(e) => {
@@ -143,7 +148,7 @@ export default function ManageUsers({
                       onChange={(e) =>
                         handleRoleChange(user.id, e.currentTarget.value)
                       }
-                      className={`w-full cursor-pointer appearance-none rounded-full border px-3 py-1.5 text-xs font-semibold focus:outline-none disabled:border-gray-300 disabled:bg-gray-50 disabled:text-gray-400 ${getRoleBadgeClass(user.role)}`}
+                      className={`w-full cursor-pointer appearance-none rounded-full border px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:border-gray-300 disabled:bg-gray-50 disabled:text-gray-400 ${getRoleBadgeClass(user.role)}`}
                     >
                       {Object.values(ROLES).map((role) => (
                         <option
@@ -160,7 +165,7 @@ export default function ManageUsers({
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
                     {new Date(user.created_at).toLocaleDateString("ar-MA")}
                   </td>
-                </tr>
+                </Link>
               ))}
             </tbody>
           </table>

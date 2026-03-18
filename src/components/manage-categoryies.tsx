@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { Button } from "./ui/Button";
 
 export default function ManageCategories({
   categories,
@@ -89,26 +90,22 @@ export default function ManageCategories({
             setSelectedCategory(category);
             setCategoryNewName(category.name);
           }}
-          className="flex cursor-pointer justify-between rounded-lg bg-gray-50 px-4 py-1.5 hover:bg-gray-100"
+          className="ds-card-soft flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-800"
         >
-          <h3>
-            {category.name}
-            {category.tasks > 0 && (
-              <span className="mr-6 rounded-full bg-primary-100 px-1.5 py-0.5 text-center text-xs font-semibold text-primary-900">
-                {category.tasks}
-              </span>
-            )}
-          </h3>
+          <h3>{category.name}</h3>
         </button>
       ))}
 
       {selectedCategory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+        <div className="ds-modal-overlay">
+          <div className="ds-modal">
             <div className="mb-4 flex justify-between">
               <h3 className="text-xl font-bold text-gray-900">تعديل الفئة</h3>
 
-              <button className="text-red-600" onClick={() => handleDeleteCategory()}>
+              <button
+                className="rounded-md p-1 text-red-600 hover:bg-red-50"
+                onClick={() => handleDeleteCategory()}
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
@@ -142,35 +139,35 @@ export default function ManageCategories({
                   }}
                   placeholder="أدخل اسم الفئة بالعربية"
                   required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="ds-input"
                 />
               </div>
 
               {formError && (
-                <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-red-800">
+                <div className="ds-error mb-4">
                   <p className="text-sm">{formError}</p>
                 </div>
               )}
 
               <div className="flex gap-3 pt-2">
-                <button
+                <Button
                   type="submit"
                   disabled={submitting || !selectedCategory}
-                  className="flex-1 rounded-md bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                  className="flex-1"
                 >
                   {submitting ? "جاري التعديل..." : "تعديل الفئة"}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="secondary"
                   disabled={submitting}
                   onClick={() => {
                     setSelectedCategory(null);
                     setFormError("");
                   }}
-                  className="rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 focus:outline-none"
                 >
                   إلغاء
-                </button>
+                </Button>
               </div>
             </form>
           </div>

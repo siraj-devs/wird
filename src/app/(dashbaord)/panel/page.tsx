@@ -1,44 +1,72 @@
-import { getCategories, getTasks, getUsers } from "@/actions";
+import {
+  getCategories,
+  getCurrentAndNextWeeksTasks,
+  getTasks,
+  getUsers,
+} from "@/actions";
 import AddCategoryForm from "@/components/add-category-form";
 import AddTaskForm from "@/components/add-task-form";
 import ManageCategories from "@/components/manage-categoryies";
 import ManageTasks from "@/components/manage-tasks";
 import ManageUsers from "@/components/manage-users";
+import ManageWeekTasks from "@/components/manage-week-tasks";
 import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
 
 export default async function Page() {
-  const {id} = await checkRole([ROLES.OWNER, ROLES.ADMIN]);
+  const { id } = await checkRole([ROLES.OWNER, ROLES.ADMIN]);
 
-  const [categories, tasks, users] = await Promise.all([
+  const [categories, tasks, users, weeksWithTasks] = await Promise.all([
     getCategories(),
     getTasks(),
     getUsers(),
+    getCurrentAndNextWeeksTasks(),
   ]);
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-lg">
-        <div className="mb-6 flex flex-col items-center justify-between gap-4 md:flex-row">
-          <h2 className="text-2xl font-bold text-gray-900">الفئات</h2>
-          <AddCategoryForm />
-        </div>
-        <ManageCategories categories={categories} />
+    <div className="ds-page">
+      <ManageWeekTasks
+        weeks={weeksWithTasks}
+        tasks={tasks}
+        categories={categories}
+      />
+
+      <div className="grid grid-cols-2 gap-6">
+        <section className="ds-card">
+          <div className="ds-section-header">
+            <div>
+              <h2 className="ds-title">الفئات</h2>
+              <p className="ds-subtitle">
+                تعريف مجموعات المهام المستخدمة داخل البرنامج.
+              </p>
+            </div>
+            <AddCategoryForm />
+          </div>
+          <ManageCategories categories={categories} />
+        </section>
+
+        <section className="ds-card">
+          <div className="ds-section-header">
+            <div>
+              <h2 className="ds-title">المهام</h2>
+              <p className="ds-subtitle">
+                إدارة مكتبة المهام التي يتم توزيعها على أسابيع البرنامج.
+              </p>
+            </div>
+            <AddTaskForm categories={categories} />
+          </div>
+
+          <ManageTasks tasks={tasks} categories={categories} />
+        </section>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-lg">
-        <div className="mb-6 flex flex-col items-center justify-between gap-4 md:flex-row">
-          <h2 className="text-2xl font-bold text-gray-900">المهام</h2>
-          <AddTaskForm categories={categories} />
-        </div>
-
-        <ManageTasks tasks={tasks} categories={categories} />
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-lg">
-        <h2 className="mb-6 text-2xl font-bold text-gray-900">المستخدمون</h2>
+      <section className="ds-card">
+        <h2 className="ds-title mb-1">المستخدمون</h2>
+        <p className="ds-subtitle mb-6">
+          مراقبة الأعضاء وتعديل الأدوار داخل البرنامج.
+        </p>
         <ManageUsers id={id} users={users} />
-      </div>
+      </section>
     </div>
   );
 }
