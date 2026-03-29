@@ -126,7 +126,15 @@ export default function ManageTasks({
                 </span>
               )}
               <span className="ds-badge-primary">
-                {(task.days?.length ?? 0) || 7} أيام
+                {task.days.length === ALL_DAYS.length
+                  ? "يوميا"
+                  : task.days
+                      .map(
+                        (dayId) =>
+                          DAYS_OF_WEEK.find((d) => d.id === dayId)?.name,
+                      )
+                      .filter(Boolean)
+                      .join(", ")}
               </span>
             </div>
           </div>

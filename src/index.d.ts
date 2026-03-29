@@ -42,7 +42,7 @@ declare global {
     id: string;
     name: string;
     category_id: nullable<string>;
-    days: nullable<number[]>;
+    days: number[];
   }
 
   interface Week {

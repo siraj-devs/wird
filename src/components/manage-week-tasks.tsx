@@ -22,7 +22,9 @@ export default function ManageWeekTasks({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState("");
   const [savingWeekId, setSavingWeekId] = useState<string | null>(null);
-  const [deletingWeekTaskId, setDeletingWeekTaskId] = useState<string | null>(null);
+  const [deletingWeekTaskId, setDeletingWeekTaskId] = useState<string | null>(
+    null,
+  );
   const [confirmDeleteWeekTask, setConfirmDeleteWeekTask] =
     useState<WeekTask | null>(null);
   const [modalError, setModalError] = useState("");
@@ -49,7 +51,8 @@ export default function ManageWeekTasks({
 
   const currentWeekStartKey = useMemo(() => getWeekStartKey(new Date()), []);
 
-  const canAddTaskToWeek = (startDate: string) => startDate > currentWeekStartKey;
+  const canAddTaskToWeek = (startDate: string) =>
+    startDate > currentWeekStartKey;
 
   const nextWeekData = useMemo(() => {
     const futureWeeks = weeks
@@ -167,9 +170,12 @@ export default function ManageWeekTasks({
     setDeletingWeekTaskId(confirmDeleteWeekTask.id);
 
     try {
-      const response = await fetch(`/api/week-tasks?id=${confirmDeleteWeekTask.id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/week-tasks?id=${confirmDeleteWeekTask.id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       const responseData = await response.json();
       if (!response.ok) {
@@ -207,8 +213,22 @@ export default function ManageWeekTasks({
             setIsAddModalOpen(true);
           }}
           disabled={!nextWeekData}
+          className="p-2!"
         >
-          إضافة مهمة للأسبوع القادم
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2.5}
+            stroke="currentColor"
+            className="size-4.5"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4.5v15m7.5-7.5h-15"
+            />
+          </svg>
         </Button>
       </div>
 
@@ -265,7 +285,9 @@ export default function ManageWeekTasks({
                         {isNextWeek && (
                           <button
                             type="button"
-                            onClick={() => handleDeleteTaskFromNextWeek(weekTask)}
+                            onClick={() =>
+                              handleDeleteTaskFromNextWeek(weekTask)
+                            }
                             disabled={
                               deletingWeekTaskId === weekTask.id ||
                               deletingWeekTaskId !== null
@@ -325,9 +347,12 @@ export default function ManageWeekTasks({
         <div className="ds-modal-overlay">
           <div className="ds-modal space-y-4">
             <div>
-              <h3 className="text-xl font-bold text-gray-900">تأكيد حذف المهمة</h3>
+              <h3 className="text-xl font-bold text-gray-900">
+                تأكيد حذف المهمة
+              </h3>
               <p className="ds-subtitle mt-1">
-                هل تريد حذف مهمة "{confirmDeleteWeekTask.task_name}" من الأسبوع القادم؟
+                هل تريد حذف مهمة "{confirmDeleteWeekTask.task_name}" من الأسبوع
+                القادم؟
               </p>
             </div>
 
@@ -365,7 +390,8 @@ export default function ManageWeekTasks({
                 </h3>
                 {nextWeekData && (
                   <p className="ds-subtitle mt-1">
-                    {nextWeekData.label} • {toArabicRange(nextWeekData.week.start_date)}
+                    {nextWeekData.label} •{" "}
+                    {toArabicRange(nextWeekData.week.start_date)}
                   </p>
                 )}
               </div>
@@ -384,7 +410,9 @@ export default function ManageWeekTasks({
             </div>
 
             {!nextWeekData ? (
-              <p className="text-sm text-gray-500">لا يوجد أسبوع قادم متاح حالياً.</p>
+              <p className="text-sm text-gray-500">
+                لا يوجد أسبوع قادم متاح حالياً.
+              </p>
             ) : (
               <>
                 <div>
@@ -415,7 +443,9 @@ export default function ManageWeekTasks({
                   </p>
                 )}
 
-                {modalError && <p className="text-xs text-red-600">{modalError}</p>}
+                {modalError && (
+                  <p className="text-xs text-red-600">{modalError}</p>
+                )}
 
                 <div className="flex gap-2 pt-1">
                   <Button
@@ -426,7 +456,9 @@ export default function ManageWeekTasks({
                     }
                     className="flex-1"
                   >
-                    {savingWeekId === nextWeekData.week.id ? "جاري..." : "إضافة"}
+                    {savingWeekId === nextWeekData.week.id
+                      ? "جاري..."
+                      : "إضافة"}
                   </Button>
                   <Button
                     type="button"

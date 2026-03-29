@@ -31,9 +31,9 @@ export default async function Page() {
         categories={categories}
       />
 
-      <div className="grid grid-cols-2 gap-6">
-        <section className="ds-card">
-          <div className="ds-section-header">
+      <div className="grid grid-cols-5 gap-6">
+        <section className="ds-card col-span-full lg:col-span-2">
+          <div className="ds-section-header flex-row">
             <div>
               <h2 className="ds-title">الفئات</h2>
               <p className="ds-subtitle">
@@ -45,8 +45,8 @@ export default async function Page() {
           <ManageCategories categories={categories} />
         </section>
 
-        <section className="ds-card">
-          <div className="ds-section-header">
+        <section className="ds-card col-span-full lg:col-span-3">
+          <div className="ds-section-header flex-row">
             <div>
               <h2 className="ds-title">المهام</h2>
               <p className="ds-subtitle">

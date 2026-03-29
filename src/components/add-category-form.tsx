@@ -53,8 +53,21 @@ export default function AddCategoryForm() {
 
   return (
     <>
-      <Button onClick={() => setIsOpen(true)} className="w-full md:w-fit">
-        فئة جديدة
+      <Button onClick={() => setIsOpen(true)} className="p-2!">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2.5}
+          stroke="currentColor"
+          className="size-4.5"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 4.5v15m7.5-7.5h-15"
+          />
+        </svg>
       </Button>
 
       <Activity mode={isOpen ? "visible" : "hidden"}>
@@ -91,11 +104,7 @@ export default function AddCategoryForm() {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1"
-                >
+                <Button type="submit" disabled={submitting} className="flex-1">
                   {submitting ? "جاري الإنشاء..." : "إنشاء فئة"}
                 </Button>
                 <Button

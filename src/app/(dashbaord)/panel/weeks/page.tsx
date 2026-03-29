@@ -33,11 +33,11 @@ export default async function Page() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="ds-badge-primary">
+          <p className="flex items-start">
+            <span className="ds-badge-primary text-nowrap">
               {weeksWithTasks.length} أسابيع
             </span>
-          </div>
+          </p>
         </div>
       </section>
 

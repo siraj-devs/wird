@@ -61,7 +61,7 @@ button {
   }
 
   .ds-section-header {
-    @apply mb-6 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center;
+    @apply mb-6 flex justify-between items-start gap-3;
   }
 
   .ds-title {
@@ -121,8 +121,6 @@ button {
   }
 } */
 
-
-  /* select::picker(select) {
+/* select::picker(select) {
     @apply bg-red-500
   } */
-

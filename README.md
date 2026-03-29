@@ -13,7 +13,7 @@
 1. Create a new project at [supabase.com](https://supabase.com)
 2. Go to Project Settings > API
 3. Copy your `URL`, `publishable` key and `secret` key
-4. Go to SQL Editor and run the `supabase-schema.sql` file
+4. Go to SQL Editor and run the `db/schema.sql` file
 
 ### 2. Discord OAuth Setup
 

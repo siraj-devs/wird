@@ -68,7 +68,7 @@ export default function UserDropdown({ user }: { user: User }) {
                 {hasRole(user, ["owner", "admin"]) && (
                   <>
                     <Link href="/panel">إدارة المهام</Link>
-                    <Link href="/admin/users">إدارة المستخدمين</Link>
+                    <Link href="/panel/weeks">إدارة الأسابيع</Link>
                   </>
                 )}
               </>

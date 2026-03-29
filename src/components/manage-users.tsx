@@ -86,16 +86,14 @@ export default function ManageUsers({
                 <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
                   تاريخ الانضمام
                 </th>
+                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                  إجراءات
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
               {users.map((user) => (
-                <Link
-                  role="tr"
-                  key={user.id}
-                  href={`/tasks/${user.id}`}
-                  className="table-row hover:bg-gray-50"
-                >
+                <tr key={user.id} className="table-row hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {user.avatar_url ? (
@@ -165,7 +163,15 @@ export default function ManageUsers({
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
                     {new Date(user.created_at).toLocaleDateString("ar-MA")}
                   </td>
-                </Link>
+                  <td className="px-6 py-4">
+                    <Link
+                      href={`/tasks/${user.id}`}
+                      className={`rounded-full border border-gray-300 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700`}
+                    >
+                      مهام
+                    </Link>
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>
