@@ -45,8 +45,13 @@ export default async function Page({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ week?: string }>;
 }) {
-  await checkRole([ROLES.ADMIN, ROLES.OWNER]);
+  const currentUser = await checkRole([ROLES.ADMIN, ROLES.OWNER, ROLES.MEMBER]);
   const [{ id }, { week }] = await Promise.all([params, searchParams]);
+
+  if (currentUser.role === ROLES.MEMBER) {
+    const allowedIds = [currentUser.id, currentUser.friend_id].filter(Boolean);
+    if (!allowedIds.includes(id)) redirect("/tasks");
+  }
 
   const today = new Date();
   const requestedWeek = parseWeekDate(week);

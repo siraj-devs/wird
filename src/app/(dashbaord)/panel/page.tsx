@@ -63,7 +63,8 @@ export default async function Page() {
       <section className="ds-card">
         <h2 className="ds-title mb-1">المستخدمون</h2>
         <p className="ds-subtitle mb-6">
-          مراقبة الأعضاء وتعديل الأدوار داخل البرنامج.
+          مراقبة الأعضاء وتعديل الأدوار داخل البرنامج. يتم تعيين الصديق من
+          خلال لوحة الإدارة فقط بواسطة المشرف أو المالك.
         </p>
         <ManageUsers id={id} users={users} />
       </section>

@@ -19,11 +19,20 @@ declare global {
 
   type role = `${ROLES}`;
 
+  interface Session {
+    id: string;
+    user_id: string;
+    token: string;
+    expires_at: string;
+    created_at: string;
+  }
+
   interface User {
     id: string;
     username: string;
     provider_id: string;
     role: Role;
+    friend_id: nullable<string>;
     email: nullable<string>;
     full_name: nullable<string>;
     phone_number: nullable<string>;

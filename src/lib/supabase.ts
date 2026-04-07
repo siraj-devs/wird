@@ -19,22 +19,3 @@ export const supabaseAdmin = createClient(
     },
   },
 );
-
-// Database types
-export interface User {
-  id: string;
-  email: string | null;
-  username: string;
-  avatar_url: string | null;
-  provider_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Session {
-  id: string;
-  user_id: string;
-  token: string;
-  expires_at: string;
-  created_at: string;
-}

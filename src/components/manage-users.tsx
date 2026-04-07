@@ -14,6 +14,7 @@ export default function ManageUsers({
   users: Awaited<User[]>;
 }) {
   const [updating, setUpdating] = useState<string | null>(null);
+  const [updatingFriend, setUpdatingFriend] = useState<string | null>(null);
   const router = useRouter();
 
   const handleRoleChange = async (userId: string, newRole: string) => {
@@ -41,6 +42,33 @@ export default function ManageUsers({
       console.error("Error updating role:", error);
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const handleFriendChange = async (userId: string, friendId: string) => {
+    setUpdatingFriend(userId);
+
+    try {
+      const response = await fetch(`/api/users/${userId}/friend`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          friendId: friendId || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error || "Failed to update friend");
+      }
+
+      router.refresh();
+    } catch (error) {
+      console.error("Error updating friend:", error);
+    } finally {
+      setUpdatingFriend(null);
     }
   };
 
@@ -82,6 +110,9 @@ export default function ManageUsers({
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
                   الدور
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                  الصديق
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
                   تاريخ الانضمام
@@ -158,6 +189,29 @@ export default function ManageUsers({
                           {getRoleLabel(role)}
                         </option>
                       ))}
+                    </select>
+                  </td>
+                  <td className="px-6 py-4">
+                    <select
+                      value={user.friend_id ?? ""}
+                      disabled={updatingFriend === user.id}
+                      onChange={(e) =>
+                        handleFriendChange(user.id, e.currentTarget.value)
+                      }
+                      className="w-full cursor-pointer rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100"
+                    >
+                      <option value="">بدون صديق</option>
+                      {users
+                        .filter((candidate) => {
+                          if (candidate.id === user.id) return false;
+                          if (!candidate.friend_id) return true;
+                          return candidate.friend_id === user.id;
+                        })
+                        .map((candidate) => (
+                          <option key={candidate.id} value={candidate.id}>
+                            {candidate.full_name || candidate.username}
+                          </option>
+                        ))}
                     </select>
                   </td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">

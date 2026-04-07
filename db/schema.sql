@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'newcomer' CHECK (role IN ('newcomer', 'guest', 'member', 'admin', 'owner', 'expelled')),
+  friend_id UUID REFERENCES users(id) ON DELETE SET NULL,
   full_name TEXT,
   phone_number TEXT,
   provider_id TEXT NOT NULL,
@@ -17,6 +18,18 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_provider_id ON users(provider_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_friend_id_unique ON users(friend_id) WHERE friend_id IS NOT NULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'users_friend_not_self'
+  ) THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_friend_not_self CHECK (friend_id IS NULL OR friend_id <> id);
+  END IF;
+END $$;
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 

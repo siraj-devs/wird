@@ -64,7 +64,10 @@ export default function UserDropdown({ user }: { user: User }) {
           >
             {hasRole(user, ["owner", "admin", "member"]) && (
               <>
-                <Link href="/tasks">مهامي</Link>
+                <Link href="/tasks">متابعة مهامي</Link>
+                {user.friend_id && (
+                  <Link href={`/tasks/${user.friend_id}`}>متابعة الصديق</Link>
+                )}
                 {hasRole(user, ["owner", "admin"]) && (
                   <>
                     <Link href="/panel">إدارة المهام</Link>
