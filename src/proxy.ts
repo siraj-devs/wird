@@ -2,7 +2,7 @@ import { verifyToken } from "@/lib/auth";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-const publicPaths = ["/login", "logout", "/api/auth"];
+const publicPaths = ["/login", "/logout", "/api/auth"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

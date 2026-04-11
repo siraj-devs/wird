@@ -88,7 +88,7 @@ export default function UserDropdown({
             <nav className="flex flex-col text-sm text-gray-700 *:px-3 *:py-2 *:hover:bg-gray-50">
               {hasRole(user, ["owner", "admin", "member"]) && (
                 <>
-                  <Link onClick={toggle} href="/tasks">
+                  <Link onClick={toggle} href="/tasks" prefetch={false}>
                     متابعة مهامي
                   </Link>
                   {canTrackMembers && (
@@ -104,16 +104,24 @@ export default function UserDropdown({
                     </button>
                   )}
                   {user.friend_id && (
-                    <Link onClick={toggle} href={`/tasks/${user.friend_id}`}>
+                    <Link
+                      onClick={toggle}
+                      href={`/tasks/${user.friend_id}`}
+                      prefetch={false}
+                    >
                       متابعة الصديق
                     </Link>
                   )}
                   {hasRole(user, ["owner"]) && (
                     <>
-                      <Link onClick={toggle} href="/panel">
+                      <Link onClick={toggle} href="/panel" prefetch={false}>
                         إدارة المهام
                       </Link>
-                      <Link onClick={toggle} href="/panel/weeks">
+                      <Link
+                        onClick={toggle}
+                        href="/panel/weeks"
+                        prefetch={false}
+                      >
                         إدارة الأسابيع
                       </Link>
                     </>
