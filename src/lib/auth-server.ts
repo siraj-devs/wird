@@ -20,8 +20,11 @@ export async function setAuthCookie(token: string) {
 
 export async function getAuthToken(): Promise<string | null> {
   const cookieStore = await cookies();
-  const cookie = cookieStore.get(TOKEN_COOKIE_NAME);
-  return cookie?.value || null;
+  const token = cookieStore
+    .getAll(TOKEN_COOKIE_NAME)
+    .map((cookie) => cookie.value)
+    .find((value) => value.length > 0);
+  return token || null;
 }
 
 export async function removeAuthCookie() {
@@ -36,7 +39,7 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
 }
 
 export async function getIdFromToken() {
-  const token = (await cookies()).get(TOKEN_COOKIE_NAME)?.value;
+  const token = await getAuthToken();
   if (!token) throw new Error("No auth token");
   const decoded = jwt.decode(token) as JWTPayload | null;
   if (!decoded?.userId) throw new Error("Invalid auth token");

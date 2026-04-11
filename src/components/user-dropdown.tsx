@@ -3,7 +3,6 @@
 import { hasRole } from "@/lib/auth";
 import { getRoleLabel } from "@/lib/roles";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -24,6 +23,10 @@ export default function UserDropdown({
 
   const toggle = () => setIsOpen((prev) => !prev);
   const closeMembersModal = () => setIsMembersModalOpen(false);
+  const navigateTo = (href: string) => {
+    setIsOpen(false);
+    router.push(href);
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -88,9 +91,13 @@ export default function UserDropdown({
             <nav className="flex flex-col text-sm text-gray-700 *:px-3 *:py-2 *:hover:bg-gray-50">
               {hasRole(user, ["owner", "admin", "member"]) && (
                 <>
-                  <Link onClick={toggle} href="/tasks" prefetch={false}>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo("/tasks")}
+                    className="cursor-pointer text-right"
+                  >
                     متابعة مهامي
-                  </Link>
+                  </button>
                   {canTrackMembers && (
                     <button
                       type="button"
@@ -104,37 +111,41 @@ export default function UserDropdown({
                     </button>
                   )}
                   {user.friend_id && (
-                    <Link
-                      onClick={toggle}
-                      href={`/tasks/${user.friend_id}`}
-                      prefetch={false}
+                    <button
+                      type="button"
+                      onClick={() => navigateTo(`/tasks/${user.friend_id}`)}
+                      className="cursor-pointer text-right"
                     >
                       متابعة الصديق
-                    </Link>
+                    </button>
                   )}
                   {hasRole(user, ["owner"]) && (
                     <>
-                      <Link onClick={toggle} href="/panel" prefetch={false}>
+                      <button
+                        type="button"
+                        onClick={() => navigateTo("/panel")}
+                        className="cursor-pointer text-right"
+                      >
                         إدارة المهام
-                      </Link>
-                      <Link
-                        onClick={toggle}
-                        href="/panel/weeks"
-                        prefetch={false}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigateTo("/panel/weeks")}
+                        className="cursor-pointer text-right"
                       >
                         إدارة الأسابيع
-                      </Link>
+                      </button>
                     </>
                   )}
                 </>
               )}
-              <Link
-                onClick={toggle}
-                href="/logout"
-                className="border-t border-gray-200 text-red-600 transition-colors hover:bg-red-50!"
+              <button
+                type="button"
+                onClick={() => navigateTo("/logout")}
+                className="cursor-pointer border-t border-gray-200 text-right text-red-600 transition-colors hover:bg-red-50!"
               >
                 تسجيل الخروج
-              </Link>
+              </button>
             </nav>
           </div>
         )}

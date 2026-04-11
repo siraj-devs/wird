@@ -1,4 +1,3 @@
-import { verifyToken } from "@/lib/auth";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -12,19 +11,15 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for auth token
-  const token = request.cookies.get("auth_token")?.value;
+  // Check for auth token presence only.
+  // Page and API handlers do the actual session validation.
+  const token = request.cookies
+    .getAll("auth_token")
+    .map((cookie) => cookie.value)
+    .find((value) => value.length > 0);
 
   if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  // Verify token
-  const payload = verifyToken(token);
-  if (!payload) {
-    const response = NextResponse.redirect(new URL("/login", request.url));
-    response.cookies.delete("auth_token");
-    return response;
   }
 
   return NextResponse.next();
