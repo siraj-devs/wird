@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    await checkAuth(request, "owner", "admin");
+    await checkAuth(request, "owner");
 
     const body = await request.json();
     const { name, category_id, days } = body;

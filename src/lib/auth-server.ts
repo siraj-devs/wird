@@ -36,8 +36,11 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
 }
 
 export async function getIdFromToken() {
-  const token = (await cookies()).get(TOKEN_COOKIE_NAME)?.value!;
-  const id = (jwt.decode(token) as JWTPayload)?.userId!;
+  const token = (await cookies()).get(TOKEN_COOKIE_NAME)?.value;
+  if (!token) throw new Error("No auth token");
+  const decoded = jwt.decode(token) as JWTPayload | null;
+  if (!decoded?.userId) throw new Error("Invalid auth token");
+  const id = decoded.userId;
   return id;
 }
 
@@ -51,9 +54,9 @@ export async function checkRole(
   if (!roles.includes(user.role)) {
     if ([ROLES.NEWCOMER, ROLES.GUEST, ROLES.EXPELLED].includes(user.role))
       redirect("/");
-    else if (user.role === ROLES.MEMBER) redirect("/tasks");
-    else if (user.role === ROLES.ADMIN || user.role === ROLES.OWNER)
-      redirect("/panel");
+    else if (user.role === ROLES.MEMBER || user.role === ROLES.ADMIN)
+      redirect("/tasks");
+    else if (user.role === ROLES.OWNER) redirect("/panel");
     else redirect("/logout");
   }
   return user;

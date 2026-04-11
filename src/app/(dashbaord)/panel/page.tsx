@@ -14,7 +14,7 @@ import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
 
 export default async function Page() {
-  const { id } = await checkRole([ROLES.OWNER, ROLES.ADMIN]);
+  const { id } = await checkRole([ROLES.OWNER]);
 
   const [categories, tasks, users, weeksWithTasks] = await Promise.all([
     getCategories(),

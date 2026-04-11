@@ -18,7 +18,7 @@ const toArabicRange = (startDate: string) => {
 };
 
 export default async function Page() {
-  await checkRole([ROLES.OWNER, ROLES.ADMIN]);
+  await checkRole([ROLES.OWNER]);
 
   const weeksWithTasks = await getAllWeeksWithTasks();
 

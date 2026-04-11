@@ -47,6 +47,21 @@ button {
   }
 }
 
+@keyframes bounce-pulse {
+  0%, 100% {
+    transform:translateY(-25%);;
+  }
+  50% {
+    transform: none;
+    opacity: 0.5;
+    transform: translateY(-4px);
+  }
+}
+
+.animate-bounce-pulse {
+  animation: bounce-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @layer components {
   .ds-page {
     @apply space-y-6;

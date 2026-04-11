@@ -1,8 +1,11 @@
 import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+const ALL_TASK_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 const dayNames = [
   "الأحد",
@@ -38,6 +41,10 @@ function toDayKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function getIsoDayNumber(date: Date): number {
+  return ((date.getDay() + 6) % 7) + 1;
+}
+
 export default async function Page({
   params,
   searchParams,
@@ -53,11 +60,17 @@ export default async function Page({
     if (!allowedIds.includes(id)) redirect("/tasks");
   }
 
+  const { data: viewedUser } = await supabaseAdmin
+    .from("users")
+    .select("id, username, full_name, avatar_url")
+    .eq("id", id)
+    .single();
+
+  if (!viewedUser) redirect("/tasks");
+
   const today = new Date();
   const requestedWeek = parseWeekDate(week);
   const weekStart = startOfWeek(requestedWeek ?? today);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 7);
 
   // Get or create the week
   const { data: weekData } = await supabaseAdmin
@@ -66,7 +79,7 @@ export default async function Page({
     .eq("start_date", toDayKey(weekStart))
     .single();
 
-  if (!weekData) redirect("/panel");
+  if (!weekData) redirect("/tasks");
 
   // Get week tasks
   const { data: weekTasks, error: weekTasksError } = await supabaseAdmin
@@ -75,7 +88,7 @@ export default async function Page({
     .eq("week_id", weekData.id)
     .order("sort_order", { ascending: true });
 
-  if (weekTasksError || !weekTasks) redirect("/panel");
+  if (weekTasksError || !weekTasks) redirect("/tasks");
 
   // Get user completions for this week
   const { data: completions } = await supabaseAdmin
@@ -110,9 +123,38 @@ export default async function Page({
     completionByTask.get(taskId)?.add(key);
   }
 
-  const totalPossible = weekTasks.length * 7;
-  const totalCompleted = Array.from(completionByTask.values()).reduce(
-    (sum, days) => sum + days.size,
+  const tasksWithStats = weekTasks.map((weekTask) => {
+    const assignedDays =
+      weekTask.task_days && weekTask.task_days.length > 0
+        ? weekTask.task_days
+        : [...ALL_TASK_DAYS];
+    const assignedKeys = new Set(
+      weekDays
+        .filter((date) => assignedDays.includes(getIsoDayNumber(date)))
+        .map((date) => toDayKey(date)),
+    );
+
+    const completedKeys =
+      completionByTask.get(weekTask.id) ?? new Set<string>();
+    const completedCount = Array.from(assignedKeys).filter((key) =>
+      completedKeys.has(key),
+    ).length;
+
+    return {
+      weekTask,
+      assignedKeys,
+      completedKeys,
+      assignedCount: assignedKeys.size,
+      completedCount,
+    };
+  });
+
+  const totalPossible = tasksWithStats.reduce(
+    (sum, taskStats) => sum + taskStats.assignedCount,
+    0,
+  );
+  const totalCompleted = tasksWithStats.reduce(
+    (sum, taskStats) => sum + taskStats.completedCount,
     0,
   );
   const achievementPercent =
@@ -126,25 +168,46 @@ export default async function Page({
   return (
     <div className="mx-auto space-y-6 p-6" dir="rtl">
       <div className="mx-auto space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">
-              {weekDays[0].toLocaleDateString("ar-MA", {
-                month: "short",
-                day: "numeric",
-              })}{" "}
-              -{" "}
-              {weekDays[6].toLocaleDateString("ar-MA", {
-                month: "short",
-                day: "numeric",
-              })}
-            </h1>
-            <p className="text-sm text-gray-500">ملخص المهام في أسبوع محدد</p>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-600">
-              تم تحقيق {achievementPercent}%
+        <h1 className="text-center text-xl font-bold">
+          {weekDays[0].toLocaleDateString("ar-MA", {
+            month: "short",
+            day: "numeric",
+          })}{" "}
+          -{" "}
+          {weekDays[6].toLocaleDateString("ar-MA", {
+            month: "short",
+            day: "numeric",
+          })}
+        </h1>
+
+        <div className="flex items-center justify-between space-y-2">
+          <div className="flex items-center gap-3">
+            {viewedUser.avatar_url ? (
+              <Image
+                src={viewedUser.avatar_url}
+                alt={viewedUser.username}
+                width={36}
+                height={36}
+                className="size-9 rounded-full"
+              />
+            ) : (
+              <div className="flex size-9 items-center justify-center rounded-full bg-gray-200 text-sm font-bold text-gray-700">
+                {viewedUser.username.charAt(0).toUpperCase()}
+              </div>
+            )}
+
+            <div className="min-w-0">
+              <p className="truncate text-base font-semibold text-gray-900">
+                {viewedUser.full_name ?? viewedUser.username}
+              </p>
+              <p className="truncate text-xs text-gray-500">
+                @{viewedUser.username}
+              </p>
             </div>
+          </div>
+
+          <div className="text-sm text-gray-600">
+            تم تحقيق {achievementPercent}%
           </div>
         </div>
 
@@ -153,21 +216,6 @@ export default async function Page({
             className="h-2 rounded-full bg-primary-500 transition-all"
             style={{ width: `${achievementPercent}%` }}
           />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <Link
-            href={`/tasks/${id}?week=${toDayKey(nextWeek)}`}
-            className="rounded-md border border-primary-200 px-3 py-1 text-sm text-primary-700 hover:bg-primary-50"
-          >
-            الأسبوع التالي
-          </Link>
-          <Link
-            href={`/tasks/${id}?week=${toDayKey(prevWeek)}`}
-            className="rounded-md border border-primary-200 px-3 py-1 text-sm text-primary-700 hover:bg-primary-50"
-          >
-            الأسبوع السابق
-          </Link>
         </div>
       </div>
 
@@ -194,9 +242,14 @@ export default async function Page({
             </p>
           )}
 
-          {weekTasks.map((weekTask) => {
-            const completedDays =
-              completionByTask.get(weekTask.id) ?? new Set();
+          {tasksWithStats.map((taskStats) => {
+            const {
+              weekTask,
+              completedKeys,
+              assignedKeys,
+              assignedCount,
+              completedCount,
+            } = taskStats;
 
             return (
               <div
@@ -211,7 +264,8 @@ export default async function Page({
 
                 {weekDays.map((date, dayIndex) => {
                   const dateKey = toDayKey(date);
-                  const isCompleted = completedDays.has(dateKey);
+                  const isAssigned = assignedKeys.has(dateKey);
+                  const isCompleted = isAssigned && completedKeys.has(dateKey);
 
                   return (
                     <div
@@ -222,7 +276,9 @@ export default async function Page({
                         className={`h-8 w-8 rounded transition-all ${
                           isCompleted
                             ? "bg-primary-500 hover:bg-primary-600"
-                            : "bg-primary-100"
+                            : isAssigned
+                              ? "bg-primary-100"
+                              : "border border-dashed border-gray-200 bg-gray-100"
                         }`}
                       />
                     </div>
@@ -231,7 +287,7 @@ export default async function Page({
 
                 <div className="col-span-1 flex items-center justify-center">
                   <span className="text-xs text-gray-500">
-                    {completedDays.size}/{7}
+                    {completedCount}/{assignedCount}
                   </span>
                 </div>
               </div>
@@ -241,7 +297,22 @@ export default async function Page({
       </div>
 
       <div className="text-center text-sm text-gray-600">
-        أكملت {totalCompleted} من أصل {totalPossible} خلال هذا الأسبوع
+        أكمل {totalCompleted} من أصل {totalPossible} خلال هذا الأسبوع
+      </div>
+
+      <div className="flex items-center justify-between">
+        <Link
+          href={`/tasks/${id}?week=${toDayKey(nextWeek)}`}
+          className="rounded-md border border-primary-200 px-3 py-1 text-sm text-primary-700 hover:bg-primary-50"
+        >
+          الأسبوع التالي
+        </Link>
+        <Link
+          href={`/tasks/${id}?week=${toDayKey(prevWeek)}`}
+          className="rounded-md border border-primary-200 px-3 py-1 text-sm text-primary-700 hover:bg-primary-50"
+        >
+          الأسبوع السابق
+        </Link>
       </div>
     </div>
   );

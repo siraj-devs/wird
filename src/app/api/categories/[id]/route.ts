@@ -31,8 +31,8 @@ export async function PUT(
     .eq('id', session.user_id)
     .single();
 
-  if (!user || !['admin', 'owner'].includes(user.role)) {
-    return NextResponse.json({ error: 'Forbidden - Admin role required' }, { status: 403 });
+  if (!user || !['owner'].includes(user.role)) {
+    return NextResponse.json({ error: 'Forbidden - Owner role required' }, { status: 403 });
   }
 
   const body = await request.json();
@@ -86,8 +86,8 @@ export async function DELETE(
     .eq('id', session.user_id)
     .single();
 
-  if (!user || !['admin', 'owner'].includes(user.role)) {
-    return NextResponse.json({ error: 'Forbidden - Admin role required' }, { status: 403 });
+  if (!user || !['owner'].includes(user.role)) {
+    return NextResponse.json({ error: 'Forbidden - Owner role required' }, { status: 403 });
   }
 
   const { error } = await supabaseAdmin

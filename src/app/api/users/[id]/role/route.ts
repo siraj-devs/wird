@@ -23,7 +23,7 @@ export async function PUT(
       .eq("id", payload.userId)
       .single();
 
-    if (!user || ![ROLES.OWNER, ROLES.ADMIN].includes(user.role as Role))
+    if (!user || ![ROLES.OWNER].includes(user.role as Role))
       throw new APIError(403, "Forbidden");
 
     const body = await request.json();
@@ -34,9 +34,6 @@ export async function PUT(
         400,
         `Invalid role. Must be one of: ${Object.values(ROLES).join(", ")}`,
       );
-
-    if (role === "owner" && user.role !== "owner")
-      throw new APIError(403, "Forbidden - Only owners can assign owner role");
 
     if (id === payload.userId)
       throw new APIError(400, "Cannot change your own role");

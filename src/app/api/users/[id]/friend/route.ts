@@ -4,7 +4,7 @@ import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
-async function getAdminOrOwner(request: NextRequest): Promise<JWTPayload> {
+async function getOwner(request: NextRequest): Promise<JWTPayload> {
   const token = request.cookies.get("auth_token")?.value;
   if (!token) throw new APIError(401, "Unauthorized");
 
@@ -17,7 +17,7 @@ async function getAdminOrOwner(request: NextRequest): Promise<JWTPayload> {
     .eq("id", payload.userId)
     .single();
 
-  if (!actor || ![ROLES.OWNER, ROLES.ADMIN].includes(actor.role as Role)) {
+  if (!actor || ![ROLES.OWNER].includes(actor.role as Role)) {
     throw new APIError(403, "Forbidden");
   }
 
@@ -50,7 +50,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await getAdminOrOwner(request);
+    await getOwner(request);
     const { id } = await params;
 
     const body = (await request.json()) as { friendId?: string | null };

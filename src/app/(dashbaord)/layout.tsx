@@ -1,6 +1,7 @@
-import { getUser } from "@/actions";
+import { getUser, getUsers } from "@/actions";
 import UserDropdown from "@/components/user-dropdown";
 import { getIdFromToken } from "@/lib/auth-server";
+import { ROLES } from "@/lib/roles";
 import { redirect } from "next/navigation";
 
 export default async function Layout({
@@ -11,6 +12,17 @@ export default async function Layout({
   const id = await getIdFromToken();
   const user = await getUser(id);
   if (!user) redirect("/logout");
+
+  const users = [ROLES.OWNER, ROLES.ADMIN].includes(user.role)
+    ? await getUsers()
+    : [];
+
+  const usersForTracking = users.map((trackedUser) => ({
+    id: trackedUser.id,
+    username: trackedUser.username,
+    full_name: trackedUser.full_name,
+    avatar_url: trackedUser.avatar_url,
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -31,7 +43,7 @@ export default async function Layout({
               </svg>
               <h1 className="font-handjet text-3xl font-extrabold">ورد</h1>
             </div>
-            <UserDropdown user={user} />
+            <UserDropdown user={user} users={usersForTracking} />
           </div>
         </div>
       </header>

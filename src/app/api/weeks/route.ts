@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
     .eq("id", payload.userId)
     .single();
 
-  if (!user || ![ROLES.ADMIN, ROLES.OWNER].includes(user.role as Role))
-    throw new APIError(403, "Forbidden - Admin role required");
+  if (!user || ![ROLES.OWNER].includes(user.role as Role))
+    throw new APIError(403, "Forbidden - Owner role required");
 
   const body = await request.json();
   const { start_date } = body;
