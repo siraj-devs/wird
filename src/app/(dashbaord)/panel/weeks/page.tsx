@@ -1,4 +1,10 @@
-import { getAllWeeksWithTasks } from "@/actions";
+import {
+  getAllWeeksWithTasks,
+  getCategories,
+  getCurrentAndNextWeeksTasks,
+  getTasks,
+} from "@/actions";
+import ManageWeekTasks from "@/components/manage-week-tasks";
 import { ALL_DAYS } from "@/lib";
 import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
@@ -20,26 +26,16 @@ const toArabicRange = (startDate: string) => {
 export default async function Page() {
   await checkRole([ROLES.OWNER]);
 
-  const weeksWithTasks = await getAllWeeksWithTasks();
+  const [categories, tasks, weeksWithTasks, weeks] = await Promise.all([
+    getCategories(),
+    getTasks(),
+    getAllWeeksWithTasks(),
+    getCurrentAndNextWeeksTasks(),
+  ]);
 
   return (
     <div className="ds-page">
-      <section className="ds-card">
-        <div className="ds-section-header mb-0">
-          <div>
-            <h1 className="ds-title">كل أسابيع البرنامج</h1>
-            <p className="ds-subtitle">
-              عرض جميع الأسابيع مع المهام المرتبطة بكل أسبوع.
-            </p>
-          </div>
-
-          <p className="flex items-start">
-            <span className="ds-badge-primary text-nowrap">
-              {weeksWithTasks.length} أسابيع
-            </span>
-          </p>
-        </div>
-      </section>
+      <ManageWeekTasks weeks={weeks} tasks={tasks} categories={categories} />
 
       {weeksWithTasks.length === 0 ? (
         <section className="ds-card">
@@ -50,17 +46,9 @@ export default async function Page() {
           {weeksWithTasks.map(({ week, tasks }) => (
             <article key={week.id} className="ds-card-soft space-y-3">
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-semibold text-gray-900">
-                    أسبوع يبدأ من{" "}
-                    {new Date(`${week.start_date}T00:00:00`).toLocaleDateString(
-                      "ar-MA",
-                    )}
-                  </h2>
-                  <p className="ds-subtitle">
-                    {toArabicRange(week.start_date)}
-                  </p>
-                </div>
+                <p className="font-medium text-gray-900">
+                  {toArabicRange(week.start_date)}
+                </p>
                 <span className="ds-badge-primary">{tasks.length} مهمة</span>
               </div>
 
@@ -79,9 +67,9 @@ export default async function Page() {
                         <span className="text-sm font-medium text-gray-800">
                           {task.task_name}
                         </span>
-                        <span className="ds-badge">
-                          {task.category_name || "بدون فئة"}
-                        </span>
+                        {task.category_name && (
+                          <span className="ds-badge">{task.category_name}</span>
+                        )}
                       </div>
                       <p className="mt-1 text-xs text-gray-500">
                         {task.task_days?.length ?? ALL_DAYS.length} أيام

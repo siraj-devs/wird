@@ -92,7 +92,7 @@ export default function ManageCategories({
           }}
           className="ds-card-soft flex items-center justify-between px-4 py-2 text-sm font-medium text-gray-800"
         >
-          <h3>{category.name}</h3>
+          <h3 className="text-start">{category.name} </h3>
         </button>
       ))}
 

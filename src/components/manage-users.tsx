@@ -100,9 +100,6 @@ export default function ManageUsers({
                   المستخدم
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
-                  الاسم الكامل
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
                   رقم الهاتف
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
@@ -143,23 +140,26 @@ export default function ManageUsers({
                         </div>
                       )}
                       <div className="mr-2">
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.username}
-                        </div>
+                        <p className="text-sm whitespace-nowrap text-gray-500">
+                          {user.full_name}
+                        </p>
+                        <p
+                          dir="ltr"
+                          className="text-end text-sm font-medium text-gray-900"
+                        >
+                          @{user.username}
+                        </p>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
-                    {user.full_name || "غير متوفر"}
                   </td>
                   <td
                     dir={user.phone_number ? "ltr" : "rtl"}
                     className="px-6 py-4 text-sm whitespace-nowrap text-gray-500 rtl:text-right"
                   >
-                    {user.phone_number || "غير متوفر"}
+                    {user.phone_number}
                   </td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
-                    {user.email || "غير متوفر"}
+                    {user.email}
                   </td>
                   <td className="px-6 py-4">
                     <select
@@ -215,7 +215,14 @@ export default function ManageUsers({
                     </select>
                   </td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-500">
-                    {new Date(user.created_at).toLocaleDateString("ar-MA")}
+                    {new Date(user.created_at).toLocaleString("ar-MA", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
                   </td>
                   <td className="px-6 py-4">
                     <Link

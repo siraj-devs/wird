@@ -126,7 +126,7 @@ export default function UserDropdown({
                         onClick={() => navigateTo("/panel")}
                         className="cursor-pointer text-right"
                       >
-                        إدارة المهام
+                        إدارة المهام والمستخدمين
                       </button>
                       <button
                         type="button"

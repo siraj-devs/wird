@@ -275,9 +275,11 @@ export default function ManageWeekTasks({
                       </span>
 
                       <div className="flex items-center gap-2">
-                        <span className="ds-badge">
-                          {weekTask.category_name || "بدون فئة"}
-                        </span>
+                        {weekTask.category_name && (
+                          <span className="ds-badge">
+                            {weekTask.category_name}
+                          </span>
+                        )}
                         <span className="ds-badge-primary">
                           {weekTask.task_days?.length ?? ALL_DAYS.length} أيام
                         </span>

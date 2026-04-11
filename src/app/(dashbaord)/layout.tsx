@@ -41,7 +41,7 @@ export default async function Layout({
                   fill="black"
                 />
               </svg>
-              <h1 className="font-handjet text-3xl font-extrabold">ورد</h1>
+              <h1 className="font-handjet text-3xl font-medium">ورد</h1>
             </div>
             <UserDropdown user={user} users={usersForTracking} />
           </div>

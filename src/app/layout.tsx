@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-// import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from "@vercel/analytics/react";
 import env from "@/env";
 import { Amiri, Handjet, Kufam, Tajawal } from "next/font/google";
 import "./globals.css";
@@ -35,10 +35,10 @@ const tajawal = Tajawal({
 export const metadata: Metadata = {
   metadataBase: new URL(env.APP_URL!),
   title: "ورد",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  description: "ورد هو أداة تتبع. قم بتتبع وقتك بسهولة، احصل على رؤى حول إنتاجيتك، وشارك تقدمك مع فريقك.",
 };
 
-export default function RootLayout({
+export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -49,6 +49,7 @@ export default function RootLayout({
         className={`font-tajawal ${handjet.variable} ${kufam.variable} ${amiri.variable} ${tajawal.variable} antialiased`}
       >
         {children}
+        <Analytics />
       </body>
     </html>
   );
