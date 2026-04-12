@@ -41,8 +41,9 @@ function toDayKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function getIsoDayNumber(date: Date): number {
-  return ((date.getDay() + 6) % 7) + 1;
+function getAppDayNumber(date: Date): number {
+  // App day IDs are Saturday=1 ... Friday=7.
+  return ((date.getDay() + 1) % 7) + 1;
 }
 
 export default async function Page({
@@ -130,7 +131,7 @@ export default async function Page({
         : [...ALL_TASK_DAYS];
     const assignedKeys = new Set(
       weekDays
-        .filter((date) => assignedDays.includes(getIsoDayNumber(date)))
+        .filter((date) => assignedDays.includes(getAppDayNumber(date)))
         .map((date) => toDayKey(date)),
     );
 
@@ -220,79 +221,83 @@ export default async function Page({
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <div className="grid grid-cols-10 gap-2 border-b border-gray-200 bg-gray-50 p-4">
-          <div className="col-span-2 text-sm font-medium text-gray-600"></div>
-          {weekDays.map((date, index) => {
-            const dayIndex = date.getDay();
-            return (
-              <div key={index} className="col-span-1 text-center">
-                <div className="text-xs font-medium text-gray-600">
-                  {dayNames[dayIndex]}
-                </div>
-                <div className="text-xs text-gray-500">{date.getDate()}</div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="divide-y divide-gray-100">
-          {weekTasks.length === 0 && (
-            <p className="p-6 text-center text-sm text-gray-500">
-              لا توجد مهام في هذا الأسبوع.
-            </p>
-          )}
-
-          {tasksWithStats.map((taskStats) => {
-            const {
-              weekTask,
-              completedKeys,
-              assignedKeys,
-              assignedCount,
-              completedCount,
-            } = taskStats;
-
-            return (
-              <div
-                key={weekTask.id}
-                className="grid grid-cols-10 gap-2 p-4 transition-colors"
-              >
-                <div className="col-span-2 flex items-center">
-                  <span className="truncate text-sm font-medium">
-                    {weekTask.task_name}
-                  </span>
-                </div>
-
-                {weekDays.map((date, dayIndex) => {
-                  const dateKey = toDayKey(date);
-                  const isAssigned = assignedKeys.has(dateKey);
-                  const isCompleted = isAssigned && completedKeys.has(dateKey);
-
-                  return (
-                    <div
-                      key={dayIndex}
-                      className="col-span-1 flex items-center justify-center"
-                    >
-                      <div
-                        className={`h-8 w-8 rounded transition-all ${
-                          isCompleted
-                            ? "bg-primary-500 hover:bg-primary-600"
-                            : isAssigned
-                              ? "bg-primary-100"
-                              : "border border-dashed border-gray-200 bg-gray-100"
-                        }`}
-                      />
+        <div className="overflow-x-auto">
+          <div className="min-w-190">
+            <div className="grid grid-cols-[minmax(180px,2fr)_repeat(7,minmax(48px,1fr))_minmax(56px,0.8fr)] gap-2 border-b border-gray-200 bg-gray-50 p-4">
+              <div className="text-sm font-medium text-gray-600"></div>
+              {weekDays.map((date, index) => {
+                const dayIndex = date.getDay();
+                return (
+                  <div key={index} className="text-center">
+                    <div className="text-xs font-medium text-gray-600">
+                      {dayNames[dayIndex]}
                     </div>
-                  );
-                })}
+                    <div className="text-xs text-gray-500">{date.getDate()}</div>
+                  </div>
+                );
+              })}
+            </div>
 
-                <div className="col-span-1 flex items-center justify-center">
-                  <span className="text-xs text-gray-500">
-                    {completedCount}/{assignedCount}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+            <div className="divide-y divide-gray-100">
+              {weekTasks.length === 0 && (
+                <p className="p-6 text-center text-sm text-gray-500">
+                  لا توجد مهام في هذا الأسبوع.
+                </p>
+              )}
+
+              {tasksWithStats.map((taskStats) => {
+                const {
+                  weekTask,
+                  completedKeys,
+                  assignedKeys,
+                  assignedCount,
+                  completedCount,
+                } = taskStats;
+
+                return (
+                  <div
+                    key={weekTask.id}
+                    className="grid grid-cols-[minmax(180px,2fr)_repeat(7,minmax(48px,1fr))_minmax(56px,0.8fr)] gap-2 p-4 transition-colors"
+                  >
+                    <div className="flex items-center">
+                      <span className="truncate text-sm font-medium">
+                        {weekTask.task_name}
+                      </span>
+                    </div>
+
+                    {weekDays.map((date, dayIndex) => {
+                      const dateKey = toDayKey(date);
+                      const isAssigned = assignedKeys.has(dateKey);
+                      const isCompleted = isAssigned && completedKeys.has(dateKey);
+
+                      return (
+                        <div
+                          key={dayIndex}
+                          className="flex items-center justify-center"
+                        >
+                          <div
+                            className={`h-8 w-8 rounded transition-all ${
+                              isCompleted
+                                ? "bg-primary-500 hover:bg-primary-600"
+                                : isAssigned
+                                  ? "bg-primary-100"
+                                  : "border border-dashed border-gray-200 bg-gray-100"
+                            }`}
+                          />
+                        </div>
+                      );
+                    })}
+
+                    <div className="flex items-center justify-center">
+                      <span className="text-xs text-gray-500">
+                        {completedCount}/{assignedCount}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 

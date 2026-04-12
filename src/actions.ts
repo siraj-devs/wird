@@ -48,6 +48,30 @@ const formatDateOnly = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+const APP_TIMEZONE = "Africa/Casablanca";
+
+const getDateKeyInTimezone = (date: Date, timeZone = APP_TIMEZONE): string => {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+};
+
+const isSameDayInTimezone = (
+  dateA: Date,
+  dateB: Date,
+  timeZone = APP_TIMEZONE,
+): boolean => {
+  return getDateKeyInTimezone(dateA, timeZone) === getDateKeyInTimezone(dateB, timeZone);
+};
+
+// App day index is Saturday=1 ... Friday=7.
+const getAppDayOfWeek = (date: Date): number => {
+  return ((date.getDay() + 1) % 7) + 1;
+};
+
 // Helper to get Saturday of a given week
 const getWeekStart = (date: Date): Date => {
   const d = new Date(date);
@@ -114,10 +138,15 @@ export const getWeekTasksForUser = async (
         weekTasks.map((wt) => wt.id)
       );
 
-    // Create a map of completions
-    const completionMap = new Map(
-      completions?.map((c) => [c.week_task_id, c.completed_at]) ?? []
-    );
+    // Keep completion state for "today" only (in app timezone) so old days do not leak.
+    const now = new Date();
+    const todayCompletions = (completions ?? []).filter((completion) => {
+      if (!completion.completed_at) return false;
+      return isSameDayInTimezone(new Date(completion.completed_at), now);
+    });
+
+    // Create a map of today's completions.
+    const completionMap = new Map(todayCompletions.map((c) => [c.week_task_id, c.completed_at]));
 
     // Merge data
     return weekTasks.map((wt) => ({
@@ -139,8 +168,8 @@ export const getUserTasks = async (userId: string): Promise<UserTask[]> => {
 
     const weekTasks = await getWeekTasksForUser(week.id, userId);
 
-    // Filter for today based on task_days array
-    const todayDayOfWeek = ((today.getDay() + 6) % 7) + 1; // 1=Mon, 7=Sun
+    // Filter for today based on app day order: Saturday=1 ... Friday=7.
+    const todayDayOfWeek = getAppDayOfWeek(today);
 
     return weekTasks
       .filter(

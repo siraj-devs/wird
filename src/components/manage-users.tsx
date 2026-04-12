@@ -2,7 +2,6 @@
 
 import { getRoleLabel, ROLES } from "@/lib/roles";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -114,9 +113,9 @@ export default function ManageUsers({
                 <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
                   تاريخ الانضمام
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                {/* <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
                   إجراءات
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
@@ -177,7 +176,7 @@ export default function ManageUsers({
                       onChange={(e) =>
                         handleRoleChange(user.id, e.currentTarget.value)
                       }
-                      className={`w-full cursor-pointer appearance-none rounded-full border px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:border-gray-300 disabled:bg-gray-50 disabled:text-gray-400 ${getRoleBadgeClass(user.role)}`}
+                      className={`cursor-pointer appearance-none rounded-full border px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:border-gray-300 disabled:bg-gray-50 disabled:text-gray-400 ${getRoleBadgeClass(user.role)}`}
                     >
                       {Object.values(ROLES).map((role) => (
                         <option
@@ -198,7 +197,11 @@ export default function ManageUsers({
                       onChange={(e) =>
                         handleFriendChange(user.id, e.currentTarget.value)
                       }
-                      className="w-full cursor-pointer rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100"
+                      className={`cursor-pointer appearance-none rounded-full border border-gray-300 px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 ${
+                        !user.friend_id
+                          ? "bg-gray-50 text-gray-600"
+                          : "bg-white text-gray-700"
+                      }`}
                     >
                       <option value="">بدون صديق</option>
                       {users
@@ -223,14 +226,6 @@ export default function ManageUsers({
                       minute: "2-digit",
                       hour12: true,
                     })}
-                  </td>
-                  <td className="px-6 py-4">
-                    <Link
-                      href={`/tasks/${user.id}`}
-                      className={`rounded-full border border-gray-300 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700`}
-                    >
-                      مهام
-                    </Link>
                   </td>
                 </tr>
               ))}
