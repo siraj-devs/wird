@@ -117,7 +117,8 @@ export const getOrCreateWeek = async (date: Date): Promise<Week | null> => {
 // Get week tasks with completion status for a user
 export const getWeekTasksForUser = async (
   weekId: string,
-  userId: string
+  userId: string,
+  targetDate: Date = new Date(),
 ): Promise<(WeekTask & { completed_at: string | null })[]> => {
   try {
     const { data: weekTasks, error } = await supabaseAdmin
@@ -138,15 +139,14 @@ export const getWeekTasksForUser = async (
         weekTasks.map((wt) => wt.id)
       );
 
-    // Keep completion state for "today" only (in app timezone) so old days do not leak.
-    const now = new Date();
-    const todayCompletions = (completions ?? []).filter((completion) => {
+    const selectedDayCompletions = (completions ?? []).filter((completion) => {
       if (!completion.completed_at) return false;
-      return isSameDayInTimezone(new Date(completion.completed_at), now);
+      return isSameDayInTimezone(new Date(completion.completed_at), targetDate);
     });
 
-    // Create a map of today's completions.
-    const completionMap = new Map(todayCompletions.map((c) => [c.week_task_id, c.completed_at]));
+    const completionMap = new Map(
+      selectedDayCompletions.map((c) => [c.week_task_id, c.completed_at]),
+    );
 
     // Merge data
     return weekTasks.map((wt) => ({
@@ -159,21 +159,25 @@ export const getWeekTasksForUser = async (
   }
 };
 
-// Get user tasks for today (compatible with old structure)
-export const getUserTasks = async (userId: string): Promise<UserTask[]> => {
+// Get user tasks for a selected day (default: today)
+export const getUserTasks = async (
+  userId: string,
+  targetDate: Date = new Date(),
+): Promise<UserTask[]> => {
   try {
-    const today = new Date();
-    const week = await getOrCreateWeek(today);
+    const week = await getOrCreateWeek(targetDate);
     if (!week) return [];
 
-    const weekTasks = await getWeekTasksForUser(week.id, userId);
+    const weekTasks = await getWeekTasksForUser(week.id, userId, targetDate);
 
-    // Filter for today based on app day order: Saturday=1 ... Friday=7.
-    const todayDayOfWeek = getAppDayOfWeek(today);
+    const selectedDayOfWeek = getAppDayOfWeek(targetDate);
 
     return weekTasks
       .filter(
-        (wt) => !wt.task_days || wt.task_days.length === 0 || wt.task_days.includes(todayDayOfWeek)
+        (wt) =>
+          !wt.task_days ||
+          wt.task_days.length === 0 ||
+          wt.task_days.includes(selectedDayOfWeek),
       )
       .map((wt) => ({
         id: wt.id,

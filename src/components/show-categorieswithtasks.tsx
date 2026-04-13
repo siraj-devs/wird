@@ -1,12 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "./ui/Button";
 
 export default function ShowCategoriesWithTasks({
   categories,
   tasks,
+  selectedDateKey,
+  canEditSelectedDate,
+  isPastSelectedDate,
 }: {
   categories: Awaited<
     {
@@ -17,6 +20,9 @@ export default function ShowCategoriesWithTasks({
     }[]
   >;
   tasks: Awaited<UserTask[]>;
+  selectedDateKey: string;
+  canEditSelectedDate: boolean;
+  isPastSelectedDate: boolean;
 }) {
   const router = useRouter();
 
@@ -30,16 +36,24 @@ export default function ShowCategoriesWithTasks({
     new Map(initialState),
   );
 
+  useEffect(() => {
+    setCheckedTasks(new Map(initialState));
+  }, [initialState, selectedDateKey]);
+
   const hasChanges = useMemo(() => {
+    if (!canEditSelectedDate) return false;
+
     for (const [taskId, isChecked] of checkedTasks) {
       if (initialState.get(taskId) !== isChecked) {
         return true;
       }
     }
     return false;
-  }, [checkedTasks, initialState]);
+  }, [canEditSelectedDate, checkedTasks, initialState]);
 
   const handleCheckboxChange = (taskId: string, checked: boolean) => {
+    if (!canEditSelectedDate) return;
+
     setCheckedTasks((prev) => {
       const newMap = new Map(prev);
       newMap.set(taskId, checked);
@@ -68,7 +82,10 @@ export default function ShowCategoriesWithTasks({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(completedTasks),
+        body: JSON.stringify({
+          tasks: completedTasks,
+          target_date: selectedDateKey,
+        }),
       });
 
       if (!response.ok) throw new Error("Failed to save tasks");
@@ -84,6 +101,12 @@ export default function ShowCategoriesWithTasks({
 
   return (
     <div className="grid flex-1 gap-8 pt-24 md:grid-cols-2">
+      {!canEditSelectedDate && (
+        <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          هذا اليوم للعرض فقط. يمكن تسجيل المهام لليوم الحالي أو يوم أمس فقط.
+        </div>
+      )}
+
       {categories.map((category, index) => (
         <div
           key={index}
@@ -111,13 +134,18 @@ export default function ShowCategoriesWithTasks({
                 <label
                   key={task.id}
                   htmlFor={`check-${task.id}`}
-                  className="inline-flex cursor-pointer items-center gap-4 rounded-lg border border-gray-100 bg-gray-50 px-2 py-3 hover:border-primary-200 has-checked:border-green-100 has-checked:bg-green-50 has-checked:text-green-900"
+                  className={`inline-flex items-center gap-4 rounded-lg border border-gray-100 bg-gray-50 px-2 py-3 has-checked:border-green-100 has-checked:bg-green-50 has-checked:text-green-900 ${
+                    isPastSelectedDate
+                      ? "cursor-default"
+                      : "cursor-pointer hover:border-primary-200"
+                  }`}
                 >
                   <div className="relative flex items-center">
                     <input
                       checked={checkedTasks.get(task.id) || false}
                       type="checkbox"
-                      className="peer size-5 appearance-none rounded border border-slate-300 transition-all checked:border-green-600 checked:bg-green-600"
+                      disabled={!canEditSelectedDate}
+                      className="peer size-5 appearance-none rounded border border-slate-300 transition-all checked:border-green-600 checked:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
                       id={`check-${task.id}`}
                       onChange={(e) =>
                         handleCheckboxChange(task.id, e.target.checked)
