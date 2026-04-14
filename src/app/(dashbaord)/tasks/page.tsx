@@ -85,46 +85,48 @@ export default async function Page({
 
   return (
     <div className="flex w-full flex-1 flex-col gap-8">
-      <div className="fixed top-16 left-0 z-30 mx-auto flex w-full justify-center gap-2 bg-white/95 py-6 shadow-2xs">
-        {daysToShow.map((day, id) => (
-          day.isFuture ? (
-            <div
-              key={id}
-              aria-disabled="true"
-              className="flex cursor-not-allowed flex-col items-center justify-center gap-1 opacity-70"
-            >
-              <span className="text-sm text-neutral-300">{day.day}</span>
-              <span className="flex flex-col items-center justify-center rounded-md bg-gray-50 px-7 py-1 text-lg font-bold text-neutral-300">
-                {day.date}
-              </span>
-            </div>
-          ) : (
-            <Link
-              key={id}
-              href={day.isToday ? "/tasks" : `/tasks?date=${day.dateKey}`}
-              className="flex flex-col items-center justify-center gap-1"
-            >
-              <span
-                className={`text-sm ${
-                  day.dateKey === selectedDateKey
-                    ? "text-primary-500"
-                    : "text-neutral-400"
-                }`}
+      <div className="fixed top-16 left-0 z-30 w-full overflow-x-auto bg-white/95 py-4 shadow-2xs md:py-6">
+        <div className="mx-auto flex min-w-max items-center justify-center gap-2 px-3">
+          {daysToShow.map((day, id) => (
+            day.isFuture ? (
+              <div
+                key={id}
+                aria-disabled="true"
+                className="flex shrink-0 cursor-not-allowed flex-col items-center justify-center gap-1 opacity-70"
               >
-                {day.day}
-              </span>
-              <span
-                className={`flex flex-col items-center justify-center rounded-md px-7 py-1 text-lg font-bold ${
-                  day.dateKey === selectedDateKey
-                    ? "border-2 border-white bg-primary-500 text-white outline-2 outline-primary-500"
-                    : "bg-gray-50"
-                }`}
+                <span className="text-sm text-neutral-300">{day.day}</span>
+                <span className="flex flex-col items-center justify-center rounded-md bg-gray-50 px-4 py-1 text-base font-bold text-neutral-300 md:px-7 md:text-lg">
+                  {day.date}
+                </span>
+              </div>
+            ) : (
+              <Link
+                key={id}
+                href={day.isToday ? "/tasks" : `/tasks?date=${day.dateKey}`}
+                className="flex shrink-0 flex-col items-center justify-center gap-1"
               >
-                {day.date}
-              </span>
-            </Link>
-          )
-        ))}
+                <span
+                  className={`text-sm ${
+                    day.dateKey === selectedDateKey
+                      ? "text-primary-500"
+                      : "text-neutral-400"
+                  }`}
+                >
+                  {day.day}
+                </span>
+                <span
+                  className={`flex flex-col items-center justify-center rounded-md px-4 py-1 text-base font-bold md:px-7 md:text-lg ${
+                    day.dateKey === selectedDateKey
+                      ? "border-2 border-white bg-primary-500 text-white outline-2 outline-primary-500"
+                      : "bg-gray-50"
+                  }`}
+                >
+                  {day.date}
+                </span>
+              </Link>
+            )
+          ))}
+        </div>
       </div>
 
       <ShowCategoriesWithTasks

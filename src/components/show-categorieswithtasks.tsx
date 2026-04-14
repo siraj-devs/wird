@@ -177,34 +177,36 @@ export default function ShowCategoriesWithTasks({
       ))}
 
       {hasChanges && (
-        <div className="fixed right-0 bottom-0 left-0 z-50 flex justify-center px-4 pb-6">
-          <div className="flex w-1/2 items-center justify-between gap-4 rounded-lg border border-gray-200 px-6 py-3 shadow-xs">
-            <div className="flex items-center gap-2">
+        <div className="fixed right-0 bottom-0 left-0 z-50 flex justify-center px-3 pb-4 sm:px-4 sm:pb-6">
+          <div className="w-full max-w-3xl rounded-lg border border-gray-200 bg-white p-3 shadow-xs sm:px-6 sm:py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
               <span className="grid size-6 place-items-center rounded-full bg-amber-200 font-extrabold text-amber-800">
                 !
               </span>
               <span className="font-medium">
-                حذر — لديك تغييرات غير محفوظة!
+                لديك تغييرات غير محفوظة!
               </span>
-            </div>
+              </div>
 
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={resetHandler}
-                disabled={saving}
-                variant="ghost"
-                className="text-sm"
-              >
-                إعادة تعيين
-              </Button>
-              <Button
-                onClick={saveHandler}
-                disabled={saving}
-                variant="success"
-                className="text-sm"
-              >
-                {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
-              </Button>
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-3">
+                <Button
+                  onClick={resetHandler}
+                  disabled={saving}
+                  variant="ghost"
+                  className="w-full text-sm sm:w-auto"
+                >
+                  إعادة تعيين
+                </Button>
+                <Button
+                  onClick={saveHandler}
+                  disabled={saving}
+                  variant="success"
+                  className="w-full text-sm sm:w-auto"
+                >
+                  {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
