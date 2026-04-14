@@ -2,8 +2,8 @@ export default function Loading() {
   const rects = [
     { x: 0, y: 96, width: 64, height: 32 },
     { x: 0, y: 128, width: 64, height: 64 },
-    { x: 64, y: 192, width: 64, height: 64 },
     { x: 64, y: 128, width: 64, height: 64 },
+    { x: 64, y: 192, width: 64, height: 64 },
     { x: 128, y: 192, width: 64, height: 32 },
     { x: 128, y: 224, width: 64, height: 64 },
     { x: 192, y: 192, width: 64, height: 64 },
@@ -20,17 +20,16 @@ export default function Loading() {
         viewBox="0 0 384 288"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="h-40 w-40"
+        className="h-36 w-36"
       >
         <style>{`
           @keyframes popIn {
-            0% { opacity: 0; transform: scale(0.75); }
-            50% { opacity: 1; transform: scale(1); }
-            100% { opacity: 1; transform: scale(1); }
+            0% { opacity: 0; }
+            100% { opacity: 1; }
           }
           .rect {
             transform-origin: center;
-            animation: popIn 2500ms ease-in-out infinite;
+            animation: popIn 2500ms ease infinite;
           }
         `}</style>
 

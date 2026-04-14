@@ -1,0 +1,412 @@
+import { getWeeks, getUsers } from "@/actions";
+import { checkRole } from "@/lib/auth-server";
+import { ROLES, getRoleLabel } from "@/lib/roles";
+import { supabaseAdmin } from "@/lib/supabase";
+import Link from "next/link";
+
+const ALL_ROLE_FILTERS = ["all", ...Object.values(ROLES)] as const;
+
+const APP_DAY_IDS = [1, 2, 3, 4, 5, 6, 7] as const;
+
+const parseDateKey = (value: string): Date | null => {
+  const parsed = new Date(`${value}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const toDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getAppDayNumber = (date: Date): number => {
+  return ((date.getDay() + 1) % 7) + 1;
+};
+
+const getWeekDates = (startDate: string): Date[] => {
+  const start = parseDateKey(startDate);
+  if (!start) return [];
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    return date;
+  });
+};
+
+const toArabicRange = (startDate: string) => {
+  const start = parseDateKey(startDate);
+  if (!start) return startDate;
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+
+  return `${start.toLocaleDateString("ar-MA", {
+    month: "short",
+    day: "numeric",
+  })} - ${end.toLocaleDateString("ar-MA", {
+    month: "short",
+    day: "numeric",
+  })}`;
+};
+
+const normalizeParam = (value?: string | string[]) => {
+  if (!value) return [] as string[];
+  return Array.isArray(value) ? value : [value];
+};
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ role?: string; week?: string | string[] }>;
+}) {
+  await checkRole([ROLES.OWNER]);
+
+  const [users, weeks, resolvedSearchParams] = await Promise.all([
+    getUsers(),
+    getWeeks(),
+    searchParams,
+  ]);
+
+  const selectedRole = ALL_ROLE_FILTERS.includes(
+    resolvedSearchParams.role as (typeof ALL_ROLE_FILTERS)[number],
+  )
+    ? (resolvedSearchParams.role as (typeof ALL_ROLE_FILTERS)[number])
+    : "all";
+
+  const weekParamIds = normalizeParam(resolvedSearchParams.week);
+  const availableWeekIds = new Set(weeks.map((week) => week.id));
+  const selectedWeekIds =
+    weekParamIds.filter((weekId) => availableWeekIds.has(weekId)).length > 0
+      ? weekParamIds.filter((weekId) => availableWeekIds.has(weekId))
+      : weeks.slice(0, 1).map((week) => week.id);
+
+  const filteredUsers =
+    selectedRole === "all"
+      ? users
+      : users.filter((user) => user.role === selectedRole);
+
+  const selectedWeeks = weeks.filter((week) => selectedWeekIds.includes(week.id));
+
+  const { data: weekTasks } = selectedWeekIds.length
+    ? await supabaseAdmin
+        .from("week_tasks")
+        .select("id, week_id, task_days, sort_order")
+        .in("week_id", selectedWeekIds)
+        .order("sort_order", { ascending: true })
+    : { data: [] as WeekTask[] };
+
+  const selectedWeekDays = new Map(
+    selectedWeeks.map((week) => [week.id, getWeekDates(week.start_date)]),
+  );
+
+  const weekTaskDaysById = new Map<string, Set<string>>();
+
+  for (const weekTask of (weekTasks ?? []) as WeekTask[]) {
+    const weekDays = selectedWeekDays.get(weekTask.week_id) ?? [];
+    const taskDays =
+      weekTask.task_days && weekTask.task_days.length > 0
+        ? weekTask.task_days
+        : [...APP_DAY_IDS];
+
+    const assignedDateKeys = new Set(
+      weekDays
+        .filter((date) => taskDays.includes(getAppDayNumber(date)))
+        .map((date) => toDateKey(date)),
+    );
+
+    weekTaskDaysById.set(weekTask.id, assignedDateKeys);
+  }
+
+  const { data: completions } = (weekTasks ?? []).length
+    ? await supabaseAdmin
+        .from("user_tasks")
+        .select("user_id, week_task_id, completed_at")
+        .in(
+          "week_task_id",
+          (weekTasks ?? []).map((weekTask) => weekTask.id),
+        )
+    : { data: [] as { user_id: string; week_task_id: string | null; completed_at: string }[] };
+
+  const userCompletionMap = new Map<string, Map<string, Set<string>>>();
+
+  for (const completion of completions ?? []) {
+    if (!completion.week_task_id) continue;
+    const completedDateKey = toDateKey(new Date(completion.completed_at));
+
+    if (!userCompletionMap.has(completion.user_id)) {
+      userCompletionMap.set(completion.user_id, new Map());
+    }
+
+    const taskMap = userCompletionMap.get(completion.user_id)!;
+    if (!taskMap.has(completion.week_task_id)) {
+      taskMap.set(completion.week_task_id, new Set());
+    }
+
+    taskMap.get(completion.week_task_id)?.add(completedDateKey);
+  }
+
+  const rows = filteredUsers.map((user) => {
+    const completionsForUser = userCompletionMap.get(user.id) ?? new Map();
+
+    let completedCount = 0;
+    let possibleCount = 0;
+    const perWeek = selectedWeeks.map((week) => {
+      let weekPossible = 0;
+      let weekCompleted = 0;
+
+      for (const weekTask of (weekTasks ?? []).filter(
+        (task) => task.week_id === week.id,
+      ) as WeekTask[]) {
+        const assignedKeys = weekTaskDaysById.get(weekTask.id) ?? new Set();
+        const completionKeys = completionsForUser.get(weekTask.id) ?? new Set();
+        const taskCompleted = Array.from(assignedKeys).filter((key) =>
+          completionKeys.has(key),
+        ).length;
+
+        weekPossible += assignedKeys.size;
+        weekCompleted += taskCompleted;
+      }
+
+      possibleCount += weekPossible;
+      completedCount += weekCompleted;
+
+      return {
+        weekId: week.id,
+        label: toArabicRange(week.start_date),
+        completed: weekCompleted,
+        total: weekPossible,
+      };
+    });
+
+    const percent =
+      possibleCount > 0 ? Math.round((completedCount / possibleCount) * 100) : 0;
+
+    return {
+      user,
+      completedCount,
+      possibleCount,
+      percent,
+      perWeek,
+    };
+  });
+
+  rows.sort((left, right) => {
+    if (right.percent !== left.percent) return right.percent - left.percent;
+    if (right.completedCount !== left.completedCount)
+      return right.completedCount - left.completedCount;
+    return (left.user.full_name ?? left.user.username).localeCompare(
+      right.user.full_name ?? right.user.username,
+      "ar",
+    );
+  });
+
+  const totalCompleted = rows.reduce(
+    (sum, row) => sum + row.completedCount,
+    0,
+  );
+  const totalPossible = rows.reduce((sum, row) => sum + row.possibleCount, 0);
+  const averagePercent =
+    rows.length > 0
+      ? Math.round(rows.reduce((sum, row) => sum + row.percent, 0) / rows.length)
+      : 0;
+
+  const queryStringFor = (nextRole: string, nextWeekIds: string[]) => {
+    const params = new URLSearchParams();
+    if (nextRole !== "all") params.set("role", nextRole);
+    nextWeekIds.forEach((weekId) => params.append("week", weekId));
+    const query = params.toString();
+    return query ? `/panel/stats?${query}` : "/panel/stats";
+  };
+
+  return (
+    <div className="ds-page" dir="rtl">
+      <section className="ds-card space-y-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="ds-title">إحصائيات المستخدمين</h2>
+            <p className="ds-subtitle">
+              راقب أداء الأعضاء عبر الأدوار والأسابيع المحددة.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-xs text-gray-500">المستخدمون المعروضون</p>
+              <p className="mt-1 text-lg font-bold text-gray-900">
+                {rows.length}
+              </p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-xs text-gray-500">إجمالي الإنجاز</p>
+              <p className="mt-1 text-lg font-bold text-gray-900">
+                {totalCompleted}/{totalPossible}
+              </p>
+            </div>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-xs text-gray-500">المتوسط العام</p>
+              <p className="mt-1 text-lg font-bold text-gray-900">
+                {averagePercent}%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <form method="get" className="space-y-4 rounded-xl border border-gray-200 bg-white p-4">
+          <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+            <label className="space-y-2">
+              <span className="block text-sm font-medium text-gray-700">
+                فلترة حسب الدور
+              </span>
+              <select
+                name="role"
+                defaultValue={selectedRole}
+                className="ds-select"
+              >
+                {ALL_ROLE_FILTERS.map((role) => (
+                  <option key={role} value={role}>
+                    {role === "all" ? "جميع الأدوار" : getRoleLabel(role)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="block text-sm font-medium text-gray-700">
+                  اختيار الأسابيع
+                </span>
+                <div className="flex items-center gap-2 text-xs">
+                  <Link
+                    href={queryStringFor(selectedRole, weeks.map((week) => week.id))}
+                    className="rounded-full border border-gray-200 px-3 py-1 text-gray-600 hover:bg-gray-50"
+                  >
+                    تحديد الكل
+                  </Link>
+                  <Link
+                    href={queryStringFor(selectedRole, [])}
+                    className="rounded-full border border-gray-200 px-3 py-1 text-gray-600 hover:bg-gray-50"
+                  >
+                    إلغاء الكل
+                  </Link>
+                </div>
+              </div>
+
+              <div className="grid max-h-60 gap-2 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-3 sm:grid-cols-2 xl:grid-cols-3">
+                {weeks.map((week) => (
+                  <label
+                    key={week.id}
+                    className="flex cursor-pointer items-start gap-3 rounded-lg border border-transparent bg-white px-3 py-2 hover:border-primary-200"
+                  >
+                    <input
+                      type="checkbox"
+                      name="week"
+                      value={week.id}
+                      defaultChecked={selectedWeekIds.includes(week.id)}
+                      className="mt-1 size-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-gray-900">
+                        {toArabicRange(week.start_date)}
+                      </span>
+                      <span className="block text-xs text-gray-500">
+                        الأسبوع {week.start_date}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button type="submit" className="ds-badge-primary px-4 py-2 text-sm">
+              تطبيق الفلاتر
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                  المستخدم
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                  الدور
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                  الإكمال
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                  النسبة
+                </th>
+                {selectedWeeks.map((week) => (
+                  <th
+                    key={week.id}
+                    className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase"
+                  >
+                    {toArabicRange(week.start_date)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={4 + selectedWeeks.length} className="px-6 py-10 text-center text-sm text-gray-500">
+                    لا توجد بيانات مطابقة للفلاتر الحالية.
+                  </td>
+                </tr>
+              ) : (
+                rows.map(({ user, completedCount, possibleCount, percent, perWeek }) => (
+                  <tr key={user.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-gray-900">
+                          {user.full_name ?? user.username}
+                        </span>
+                        <span className="text-xs text-gray-500">@{user.username}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="ds-badge">{getRoleLabel(user.role)}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {completedCount}/{possibleCount}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-28 rounded-full bg-gray-100">
+                          <div
+                            className="h-2 rounded-full bg-primary-500"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {percent}%
+                        </span>
+                      </div>
+                    </td>
+                    {perWeek.map((weekStats) => (
+                      <td
+                        key={weekStats.weekId}
+                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-700"
+                      >
+                        {weekStats.completed}/{weekStats.total}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}

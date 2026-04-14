@@ -161,6 +161,56 @@ export default async function Page({
   const achievementPercent =
     totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0;
 
+  const dayStats = weekDays.map((date, index) => {
+    const dateKey = toDayKey(date);
+    const dayName = dayNames[date.getDay()];
+
+    const assignedTasks = tasksWithStats.filter((taskStats) =>
+      taskStats.assignedKeys.has(dateKey),
+    );
+
+    const completedTasks = assignedTasks.filter((taskStats) =>
+      taskStats.completedKeys.has(dateKey),
+    ).length;
+
+    const completionPercent =
+      assignedTasks.length > 0
+        ? Math.round((completedTasks / assignedTasks.length) * 100)
+        : 0;
+
+    return {
+      date,
+      index,
+      dateKey,
+      dayName,
+      assignedTasks: assignedTasks.length,
+      completedTasks,
+      completionPercent,
+    };
+  });
+
+  const topTasks = [...tasksWithStats]
+    .map((taskStats) => ({
+      ...taskStats,
+      percent:
+        taskStats.assignedCount > 0
+          ? Math.round((taskStats.completedCount / taskStats.assignedCount) * 100)
+          : 0,
+    }))
+    .sort((left, right) => {
+      if (right.percent !== left.percent) return right.percent - left.percent;
+      if (right.completedCount !== left.completedCount)
+        return right.completedCount - left.completedCount;
+      return left.weekTask.task_name.localeCompare(right.weekTask.task_name, "ar");
+    })
+    .slice(0, 4);
+
+  const busiestDay = [...dayStats].sort(
+    (left, right) => right.completedTasks - left.completedTasks,
+  )[0];
+
+  const strongestTask = topTasks[0] ?? null;
+
   const prevWeek = new Date(weekStart);
   prevWeek.setDate(prevWeek.getDate() - 7);
   const nextWeek = new Date(weekStart);
@@ -207,8 +257,10 @@ export default async function Page({
             </div>
           </div>
 
-          <div className="text-sm text-gray-600">
-            تم تحقيق {achievementPercent}%
+          <div className="flex items-center gap-3">
+            <div className="text-sm text-gray-600">
+              تم تحقيق {achievementPercent}%
+            </div>
           </div>
         </div>
 
@@ -220,7 +272,6 @@ export default async function Page({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
         <div className="overflow-x-auto">
           <div className="min-w-190">
             <div className="grid grid-cols-[minmax(180px,2fr)_repeat(7,minmax(48px,1fr))_minmax(56px,0.8fr)] gap-2 border-b border-gray-200 bg-gray-50 p-4">
@@ -234,7 +285,7 @@ export default async function Page({
                     </div>
                     <div className="text-xs text-gray-500">{date.getDate()}</div>
                   </div>
-                );
+                )
               })}
             </div>
 
@@ -285,7 +336,7 @@ export default async function Page({
                             }`}
                           />
                         </div>
-                      );
+                      )
                     })}
 
                     <div className="flex items-center justify-center">
@@ -294,12 +345,11 @@ export default async function Page({
                       </span>
                     </div>
                   </div>
-                );
+                )
               })}
             </div>
           </div>
         </div>
-      </div>
 
       <div className="text-center text-sm text-gray-600">
         أكمل {totalCompleted} من أصل {totalPossible} خلال هذا الأسبوع

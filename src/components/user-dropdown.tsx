@@ -130,6 +130,13 @@ export default function UserDropdown({
                       </button>
                       <button
                         type="button"
+                        onClick={() => navigateTo("/panel/stats")}
+                        className="cursor-pointer text-right"
+                      >
+                        إحصائيات المستخدمين
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => navigateTo("/panel/weeks")}
                         className="cursor-pointer text-right"
                       >
