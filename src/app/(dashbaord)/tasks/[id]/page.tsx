@@ -1,11 +1,10 @@
+import { ALL_DAYS } from "@/lib";
 import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
-const ALL_TASK_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 const dayNames = [
   "الأحد",
@@ -128,7 +127,7 @@ export default async function Page({
     const assignedDays =
       weekTask.task_days && weekTask.task_days.length > 0
         ? weekTask.task_days
-        : [...ALL_TASK_DAYS];
+        : [...ALL_DAYS];
     const assignedKeys = new Set(
       weekDays
         .filter((date) => assignedDays.includes(getAppDayNumber(date)))

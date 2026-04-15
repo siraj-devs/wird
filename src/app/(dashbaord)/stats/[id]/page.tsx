@@ -1,10 +1,9 @@
+import { ALL_DAYS } from "@/lib";
 import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-
-const ALL_TASK_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 const dayNames = [
   "الأحد",
@@ -51,16 +50,12 @@ export default async function Page({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ week?: string; weekFrom?: string; weekTo?: string }>;
 }) {
-  const currentUser = await checkRole([ROLES.ADMIN, ROLES.OWNER, ROLES.MEMBER]);
+  await checkRole([ROLES.ADMIN, ROLES.OWNER]);
+
   const [{ id }, { week, weekFrom, weekTo }] = await Promise.all([
     params,
     searchParams,
   ]);
-
-  if (currentUser.role === ROLES.MEMBER) {
-    const allowedIds = [currentUser.id, currentUser.friend_id].filter(Boolean);
-    if (!allowedIds.includes(id)) redirect("/tasks");
-  }
 
   const { data: viewedUser } = await supabaseAdmin
     .from("users")
@@ -187,7 +182,7 @@ export default async function Page({
     const assignedDays =
       weekTask.task_days && weekTask.task_days.length > 0
         ? weekTask.task_days
-        : [...ALL_TASK_DAYS];
+        : [...ALL_DAYS];
     const assignedKeys = new Set(
       weekDays
         .filter((date) => assignedDays.includes(getAppDayNumber(date)))
@@ -258,8 +253,6 @@ export default async function Page({
     1,
   );
 
-  const dayStatsByKey = new Map(dayStats.map((day) => [day.dateKey, day]));
-
   const topTasks = [...tasksWithStats]
     .sort((left, right) => {
       if (right.percent !== left.percent) return right.percent - left.percent;
@@ -310,7 +303,9 @@ export default async function Page({
         <div className="flex flex-col gap-4 lg:flex-row lg:justify-between">
           <div className="space-y-2">
             <h2 className="ds-title">إحصائيات المستخدم</h2>
-            <p className="ds-subtitle">تفاصيل الأداء ضمن النطاق الزمني المحدد.</p>
+            <p className="ds-subtitle">
+              تفاصيل الأداء ضمن النطاق الزمني المحدد.
+            </p>
 
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -505,13 +500,26 @@ export default async function Page({
                 return (
                   <div
                     key={day.dateKey}
-                    className="flex flex-col items-center gap-2"
+                    className="bg-red-50- flex flex-col items-center gap-2"
                   >
-                    <div className="flex h-48 w-full items-end rounded-2xl bg-gray-50 sm:h-56">
+                    <div className="mt-8 flex h-48 w-full items-end rounded-2xl sm:h-56">
                       <div
-                        className="flex h-full w-full items-end justify-center rounded-2xl bg-[linear-gradient(180deg,rgba(59,130,246,0.06),rgba(59,130,246,0.01))] p-1"
+                        className={`relative flex h-full w-full items-end justify-center rounded-2xl bg-linear-to-b p-1 ${
+                          isCompleted
+                            ? "from-amber-100/60 to-amber-100/10"
+                            : "from-primary-50/60 to-primary-50/10"
+                        }`}
                         style={{ height: `${softBarHeight}%` }}
                       >
+                        <div
+                          className={`absolute -top-8 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                            isCompleted
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-primary-50 text-primary-700"
+                          }`}
+                        >
+                          {day.completedTasks}/{day.assignedTasks}
+                        </div>
                         <div
                           className={`relative w-full rounded-2xl bg-linear-to-t shadow-sm transition-all ${
                             isCompleted
@@ -532,9 +540,9 @@ export default async function Page({
                       </p>
                     </div>
 
-                    <div className="rounded-full bg-primary-50 px-2.5 py-1 text-[11px] font-semibold text-primary-700">
+                    {/* <div className="rounded-full bg-primary-50 px-2.5 py-1 text-[11px] font-semibold text-primary-700">
                       {day.completedTasks}/{day.assignedTasks}
-                    </div>
+                    </div> */}
                   </div>
                 );
               })}
