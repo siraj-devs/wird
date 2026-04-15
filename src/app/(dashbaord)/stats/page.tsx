@@ -1,4 +1,4 @@
-import { getWeeks, getUsers } from "@/actions";
+import { getUsers, getWeeks } from "@/actions";
 import { checkRole } from "@/lib/auth-server";
 import { ROLES, getRoleLabel } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -77,17 +77,18 @@ export default async function Page({
 
   const weekParamIds = normalizeParam(resolvedSearchParams.week);
   const availableWeekIds = new Set(weeks.map((week) => week.id));
-  const selectedWeekIds =
-    weekParamIds.filter((weekId) => availableWeekIds.has(weekId)).length > 0
-      ? weekParamIds.filter((weekId) => availableWeekIds.has(weekId))
-      : weeks.slice(0, 1).map((week) => week.id);
+  const selectedWeekId =
+    weekParamIds.find((weekId) => availableWeekIds.has(weekId)) ?? weeks[0]?.id;
+  const selectedWeekIds = selectedWeekId ? [selectedWeekId] : [];
 
   const filteredUsers =
     selectedRole === "all"
       ? users
       : users.filter((user) => user.role === selectedRole);
 
-  const selectedWeeks = weeks.filter((week) => selectedWeekIds.includes(week.id));
+  const selectedWeeks = weeks.filter((week) =>
+    selectedWeekIds.includes(week.id),
+  );
 
   const { data: weekTasks } = selectedWeekIds.length
     ? await supabaseAdmin
@@ -127,7 +128,13 @@ export default async function Page({
           "week_task_id",
           (weekTasks ?? []).map((weekTask) => weekTask.id),
         )
-    : { data: [] as { user_id: string; week_task_id: string | null; completed_at: string }[] };
+    : {
+        data: [] as {
+          user_id: string;
+          week_task_id: string | null;
+          completed_at: string;
+        }[],
+      };
 
   const userCompletionMap = new Map<string, Map<string, Set<string>>>();
 
@@ -181,7 +188,9 @@ export default async function Page({
     });
 
     const percent =
-      possibleCount > 0 ? Math.round((completedCount / possibleCount) * 100) : 0;
+      possibleCount > 0
+        ? Math.round((completedCount / possibleCount) * 100)
+        : 0;
 
     return {
       user,
@@ -202,23 +211,14 @@ export default async function Page({
     );
   });
 
-  const totalCompleted = rows.reduce(
-    (sum, row) => sum + row.completedCount,
-    0,
-  );
+  const totalCompleted = rows.reduce((sum, row) => sum + row.completedCount, 0);
   const totalPossible = rows.reduce((sum, row) => sum + row.possibleCount, 0);
   const averagePercent =
     rows.length > 0
-      ? Math.round(rows.reduce((sum, row) => sum + row.percent, 0) / rows.length)
+      ? Math.round(
+          rows.reduce((sum, row) => sum + row.percent, 0) / rows.length,
+        )
       : 0;
-
-  const queryStringFor = (nextRole: string, nextWeekIds: string[]) => {
-    const params = new URLSearchParams();
-    if (nextRole !== "all") params.set("role", nextRole);
-    nextWeekIds.forEach((weekId) => params.append("week", weekId));
-    const query = params.toString();
-    return query ? `/panel/stats?${query}` : "/panel/stats";
-  };
 
   return (
     <div className="ds-page" dir="rtl">
@@ -253,8 +253,11 @@ export default async function Page({
           </div>
         </div>
 
-        <form method="get" className="space-y-4 rounded-xl border border-gray-200 bg-white p-4">
-          <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+        <form
+          method="get"
+          className="space-y-4 rounded-xl border border-gray-200 bg-white p-4"
+        >
+          <div className="grid items-end gap-4 lg:grid-cols-[1fr_2fr_auto]">
             <label className="space-y-2">
               <span className="block text-sm font-medium text-gray-700">
                 فلترة حسب الدور
@@ -272,56 +275,27 @@ export default async function Page({
               </select>
             </label>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="block text-sm font-medium text-gray-700">
-                  اختيار الأسابيع
-                </span>
-                <div className="flex items-center gap-2 text-xs">
-                  <Link
-                    href={queryStringFor(selectedRole, weeks.map((week) => week.id))}
-                    className="rounded-full border border-gray-200 px-3 py-1 text-gray-600 hover:bg-gray-50"
-                  >
-                    تحديد الكل
-                  </Link>
-                  <Link
-                    href={queryStringFor(selectedRole, [])}
-                    className="rounded-full border border-gray-200 px-3 py-1 text-gray-600 hover:bg-gray-50"
-                  >
-                    إلغاء الكل
-                  </Link>
-                </div>
-              </div>
-
-              <div className="grid max-h-60 gap-2 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-3 sm:grid-cols-2 xl:grid-cols-3">
+            <label className="space-y-2">
+              <span className="block text-sm font-medium text-gray-700">
+                اختيار الأسابيع
+              </span>
+              <select
+                name="week"
+                defaultValue={selectedWeekId}
+                className="ds-select"
+              >
                 {weeks.map((week) => (
-                  <label
-                    key={week.id}
-                    className="flex cursor-pointer items-start gap-3 rounded-lg border border-transparent bg-white px-3 py-2 hover:border-primary-200"
-                  >
-                    <input
-                      type="checkbox"
-                      name="week"
-                      value={week.id}
-                      defaultChecked={selectedWeekIds.includes(week.id)}
-                      className="mt-1 size-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                    />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium text-gray-900">
-                        {toArabicRange(week.start_date)}
-                      </span>
-                      <span className="block text-xs text-gray-500">
-                        الأسبوع {week.start_date}
-                      </span>
-                    </span>
-                  </label>
+                  <option key={week.id} value={week.id}>
+                    {toArabicRange(week.start_date)}
+                  </option>
                 ))}
-              </div>
-            </div>
-          </div>
+              </select>
+            </label>
 
-          <div className="flex justify-end">
-            <button type="submit" className="ds-badge-primary px-4 py-2 text-sm">
+            <button
+              type="submit"
+              className="ds-badge-primary flex px-4 py-2 text-center text-sm"
+            >
               تطبيق الفلاتر
             </button>
           </div>
@@ -345,38 +319,40 @@ export default async function Page({
                 <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
                   النسبة
                 </th>
-                {selectedWeeks.map((week) => (
-                  <th
-                    key={week.id}
-                    className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase"
-                  >
-                    {toArabicRange(week.start_date)}
-                  </th>
-                ))}
+                <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+                  الإجراءات
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4 + selectedWeeks.length} className="px-6 py-10 text-center text-sm text-gray-500">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-10 text-center text-sm text-gray-500"
+                  >
                     لا توجد بيانات مطابقة للفلاتر الحالية.
                   </td>
                 </tr>
               ) : (
-                rows.map(({ user, completedCount, possibleCount, percent, perWeek }) => (
+                rows.map(({ user, completedCount, possibleCount, percent }) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold text-gray-900">
                           {user.full_name ?? user.username}
                         </span>
-                        <span className="text-xs text-gray-500">@{user.username}</span>
+                        <span className="text-xs text-gray-500">
+                          @{user.username}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="ds-badge">{getRoleLabel(user.role)}</span>
+                      <span className="ds-badge">
+                        {getRoleLabel(user.role)}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                       {completedCount}/{possibleCount}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -392,14 +368,14 @@ export default async function Page({
                         </span>
                       </div>
                     </td>
-                    {perWeek.map((weekStats) => (
-                      <td
-                        key={weekStats.weekId}
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-700"
+                    <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
+                      <Link
+                        href={`/stats/${user.id}${selectedWeeks[0] ? `?week=${selectedWeeks[0].start_date}` : ""}`}
+                        className="inline-flex items-center rounded-lg border border-primary-200 px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-50"
                       >
-                        {weekStats.completed}/{weekStats.total}
-                      </td>
-                    ))}
+                        عرض الإحصائيات
+                      </Link>
+                    </td>
                   </tr>
                 ))
               )}

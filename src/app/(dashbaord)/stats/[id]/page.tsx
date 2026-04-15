@@ -305,11 +305,12 @@ export default async function Page({
     `/stats/${id}?weekFrom=${toDayKey(targetStart)}&weekTo=${toDayKey(targetEnd)}`;
 
   return (
-    <div className="ds-page">
+    <div className="ds-page" dir="rtl">
       <section className="ds-card space-y-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:justify-between">
           <div className="space-y-2">
-            <p className="text-sm text-gray-500">إحصائيات المستخدم</p>
+            <h2 className="ds-title">إحصائيات المستخدم</h2>
+            <p className="ds-subtitle">تفاصيل الأداء ضمن النطاق الزمني المحدد.</p>
 
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -350,7 +351,7 @@ export default async function Page({
                 <select
                   name="weekFrom"
                   defaultValue={rangeStartKey}
-                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-primary-300 focus:outline-none"
+                  className="ds-select"
                 >
                   {[...allWeeks].reverse().map((weekItem) => (
                     <option
@@ -368,7 +369,7 @@ export default async function Page({
                 <select
                   name="weekTo"
                   defaultValue={rangeEndKey}
-                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-primary-300 focus:outline-none"
+                  className="ds-select"
                 >
                   {[...allWeeks].reverse().map((weekItem) => (
                     <option
@@ -383,7 +384,7 @@ export default async function Page({
 
               <button
                 type="submit"
-                className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                className="ds-badge-primary px-4 py-2 text-sm"
               >
                 عرض النطاق
               </button>
@@ -393,7 +394,7 @@ export default async function Page({
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <article className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <article className="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_55%)]" />
           <div className="relative flex items-start justify-between gap-3">
             <div>
@@ -421,7 +422,7 @@ export default async function Page({
           </div>
         </article>
 
-        <article className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <article className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
           <p className="text-xs font-medium text-gray-500">أقوى يوم</p>
           <div className="mt-3 flex items-center justify-between gap-3">
             <div>
@@ -450,7 +451,7 @@ export default async function Page({
           </div>
         </article>
 
-        <article className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <article className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
           <p className="text-xs font-medium text-gray-500">أفضل مهمة</p>
           <div className="mt-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -471,7 +472,7 @@ export default async function Page({
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <article className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <article className="min-w-0 rounded-xl border border-gray-200 bg-white p-4">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-gray-900">
@@ -541,7 +542,7 @@ export default async function Page({
           </div>
         </article>
 
-        <article className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <article className="min-w-0 rounded-xl border border-gray-200 bg-white p-4">
           <div className="mb-4">
             <p className="text-sm font-semibold text-gray-900">
               أعلى المهام التزامًا
@@ -560,7 +561,7 @@ export default async function Page({
               topTasks.map((task, index) => (
                 <div
                   key={task.weekTask.id}
-                  className="rounded-2xl border border-gray-200 bg-gray-50 p-3"
+                  className="rounded-xl border border-gray-200 bg-gray-50 p-3"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
