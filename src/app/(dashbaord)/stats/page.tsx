@@ -24,6 +24,15 @@ const getAppDayNumber = (date: Date): number => {
   return ((date.getDay() + 1) % 7) + 1;
 };
 
+const getWeekStartDateKey = (date: Date): string => {
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+  const day = value.getDay();
+  const diffToSaturday = (day + 1) % 7;
+  value.setDate(value.getDate() - diffToSaturday);
+  return toDateKey(value);
+};
+
 const getWeekDates = (startDate: string): Date[] => {
   const start = parseDateKey(startDate);
   if (!start) return [];
@@ -77,8 +86,14 @@ export default async function Page({
 
   const weekParamIds = normalizeParam(resolvedSearchParams.week);
   const availableWeekIds = new Set(weeks.map((week) => week.id));
+  const currentWeekStartKey = getWeekStartDateKey(new Date());
+  const currentWeekId = weeks.find(
+    (week) => week.start_date === currentWeekStartKey,
+  )?.id;
   const selectedWeekId =
-    weekParamIds.find((weekId) => availableWeekIds.has(weekId)) ?? weeks[0]?.id;
+    weekParamIds.find((weekId) => availableWeekIds.has(weekId)) ??
+    currentWeekId ??
+    weeks[0]?.id;
   const selectedWeekIds = selectedWeekId ? [selectedWeekId] : [];
 
   const filteredUsers =
@@ -371,9 +386,23 @@ export default async function Page({
                     <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-700">
                       <Link
                         href={`/stats/${user.id}${selectedWeeks[0] ? `?week=${selectedWeeks[0].start_date}` : ""}`}
-                        className="inline-flex items-center rounded-lg border border-primary-200 px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-50"
+                        className="inline-flex items-center gap-1 rounded-lg border border-primary-200 px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-50"
                       >
-                        عرض الإحصائيات
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="size-4.5 mb-1"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"
+                          />
+                        </svg>
+                        الإحصائيات
                       </Link>
                     </td>
                   </tr>

@@ -176,7 +176,7 @@ export default function ManageUsers({
                       onChange={(e) =>
                         handleRoleChange(user.id, e.currentTarget.value)
                       }
-                      className={`cursor-pointer appearance-none rounded-full border px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:border-gray-300 disabled:bg-gray-50 disabled:text-gray-400 ${getRoleBadgeClass(user.role)}`}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:border-gray-300 disabled:bg-gray-50 disabled:text-gray-400 ${getRoleBadgeClass(user.role)}`}
                     >
                       {Object.values(ROLES).map((role) => (
                         <option
@@ -197,7 +197,7 @@ export default function ManageUsers({
                       onChange={(e) =>
                         handleFriendChange(user.id, e.currentTarget.value)
                       }
-                      className={`cursor-pointer appearance-none rounded-full border border-gray-300 px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 ${
+                      className={`rounded-full border border-gray-300 px-3 py-1.5 text-xs font-semibold focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 ${
                         !user.friend_id
                           ? "bg-gray-50 text-gray-600"
                           : "bg-white text-gray-700"

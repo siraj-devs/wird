@@ -47,6 +47,11 @@ button {
   }
 }
 
+select {
+  cursor: pointer;
+  appearance: none;
+}
+
 @keyframes bounce-pulse {
   0%, 100% {
     transform:translateY(-25%);;
