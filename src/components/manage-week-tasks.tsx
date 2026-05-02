@@ -20,7 +20,9 @@ export default function ManageWeekTasks({
 }) {
   const router = useRouter();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState("");
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [filterText, setFilterText] = useState("");
+
   const [savingWeekId, setSavingWeekId] = useState<string | null>(null);
   const [deletingWeekTaskId, setDeletingWeekTaskId] = useState<string | null>(
     null,
@@ -72,6 +74,37 @@ export default function ManageWeekTasks({
     return tasks.filter((task) => !usedTaskIds.has(task.id));
   }, [nextWeekData, tasks]);
 
+  const visibleTasks = useMemo(() => {
+    const q = filterText.trim().toLowerCase();
+    if (!q) return nextWeekAvailableTasks;
+    return nextWeekAvailableTasks.filter((t) =>
+      t.name.toLowerCase().includes(q),
+    );
+  }, [nextWeekAvailableTasks, filterText]);
+
+  const toggleTaskSelection = (taskId: string) => {
+    setSelectedTaskIds((prev) =>
+      prev.includes(taskId)
+        ? prev.filter((id) => id !== taskId)
+        : [...prev, taskId],
+    );
+  };
+
+  const selectAllVisible = () => {
+    setSelectedTaskIds((prev) => {
+      const ids = visibleTasks.map((t) => t.id);
+      return Array.from(new Set([...prev, ...ids]));
+    });
+  };
+
+  const selectedTasks = useMemo(
+    () =>
+      nextWeekAvailableTasks.filter((task) =>
+        selectedTaskIds.includes(task.id),
+      ),
+    [nextWeekAvailableTasks, selectedTaskIds],
+  );
+
   const toArabicRange = (startDate: string) => {
     const start = new Date(`${startDate}T00:00:00`);
     const end = new Date(start);
@@ -86,20 +119,23 @@ export default function ManageWeekTasks({
     })}`;
   };
 
-  const handleAddTaskToNextWeek = async () => {
+  const handleAddTasksToNextWeek = async () => {
     if (!nextWeekData) {
       setModalError("لا يوجد أسبوع قادم متاح حالياً");
       return;
     }
 
-    if (!selectedTaskId) {
-      setModalError("الرجاء اختيار مهمة أولاً");
+    if (selectedTaskIds.length === 0) {
+      setModalError("الرجاء اختيار مهمة واحدة على الأقل");
       return;
     }
 
-    const selectedTask = tasks.find((task) => task.id === selectedTaskId);
-    if (!selectedTask) {
-      setModalError("المهمة المختارة غير موجودة");
+    const taskIdsToAdd = selectedTaskIds.filter((taskId) =>
+      nextWeekAvailableTasks.some((task) => task.id === taskId),
+    );
+
+    if (taskIdsToAdd.length === 0) {
+      setModalError("المهام المختارة غير متاحة للإضافة");
       return;
     }
 
@@ -107,34 +143,44 @@ export default function ManageWeekTasks({
     setModalError("");
 
     try {
-      const response = await fetch("/api/week-tasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          week_id: nextWeekData.week.id,
-          task_id: selectedTask.id,
-          task_name: selectedTask.name,
-          category_id: selectedTask.category_id,
-          category_name: selectedTask.category_id
-            ? categoryNameById.get(selectedTask.category_id) || null
-            : null,
-          task_days:
-            selectedTask.days && selectedTask.days.length > 0
-              ? selectedTask.days
-              : [...ALL_DAYS],
-          sort_order: nextWeekData.tasks.length,
-        }),
-      });
+      for (const [index, taskId] of taskIdsToAdd.entries()) {
+        const selectedTask = nextWeekAvailableTasks.find(
+          (task) => task.id === taskId,
+        );
 
-      const responseData = await response.json();
+        if (!selectedTask) {
+          throw new Error("المهمة المختارة غير موجودة");
+        }
 
-      if (!response.ok) {
-        throw new Error(responseData.error || "فشل في إضافة المهمة");
+        const response = await fetch("/api/week-tasks", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            week_id: nextWeekData.week.id,
+            task_id: selectedTask.id,
+            task_name: selectedTask.name,
+            category_id: selectedTask.category_id,
+            category_name: selectedTask.category_id
+              ? categoryNameById.get(selectedTask.category_id) || null
+              : null,
+            task_days:
+              selectedTask.days && selectedTask.days.length > 0
+                ? selectedTask.days
+                : [...ALL_DAYS],
+            sort_order: nextWeekData.tasks.length + index,
+          }),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          throw new Error(responseData.error || "فشل في إضافة المهمة");
+        }
       }
 
-      setSelectedTaskId("");
+      setSelectedTaskIds([]);
       setIsAddModalOpen(false);
       setModalError("");
 
@@ -209,7 +255,7 @@ export default function ManageWeekTasks({
         <Button
           onClick={() => {
             setModalError("");
-            setSelectedTaskId("");
+            setSelectedTaskIds([]);
             setIsAddModalOpen(true);
           }}
           disabled={!nextWeekData}
@@ -419,24 +465,71 @@ export default function ManageWeekTasks({
               <>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">
-                    اختر مهمة
+                    اختر المهام
                   </label>
-                  <select
-                    value={selectedTaskId}
-                    onChange={(e) => setSelectedTaskId(e.target.value)}
-                    className="ds-select"
-                    disabled={
-                      nextWeekAvailableTasks.length === 0 ||
-                      savingWeekId === nextWeekData.week.id
-                    }
-                  >
-                    <option value="">اختر مهمة لإضافتها</option>
-                    {nextWeekAvailableTasks.map((task) => (
-                      <option key={task.id} value={task.id}>
-                        {task.name}
-                      </option>
+
+                  <div className="mb-2 flex gap-2">
+                    <input
+                      value={filterText}
+                      onChange={(e) => setFilterText(e.target.value)}
+                      placeholder="ابحث عن مهمة أو فئة"
+                      className="ds-input min-w-0"
+                      disabled={
+                        nextWeekAvailableTasks.length === 0 ||
+                        savingWeekId === nextWeekData.week.id
+                      }
+                    />
+
+                    <button
+                      type="button"
+                      onClick={selectAllVisible}
+                      disabled={visibleTasks.length === 0}
+                      className="rounded-lg border border-primary-200 px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-50 disabled:opacity-60"
+                    >
+                      تحديد الكل
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTaskIds([])}
+                      disabled={selectedTaskIds.length === 0}
+                      className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                    >
+                      مسح
+                    </button>
+                  </div>
+
+                  <div className="max-h-56 space-y-1 overflow-auto rounded border border-gray-200 bg-white p-2">
+                    {visibleTasks.map((task) => (
+                      <label
+                        key={task.id}
+                        htmlFor={`select-task-${task.id}`}
+                        className="flex items-center gap-2 rounded p-2 hover:bg-gray-50 has-checked:bg-primary-50"
+                      >
+                        <input
+                          type="checkbox"
+                          id={`select-task-${task.id}`}
+                          checked={selectedTaskIds.includes(task.id)}
+                          onChange={() => toggleTaskSelection(task.id)}
+                          className="ds-input hidden"
+                        />
+
+                        <div className="flex-1 text-sm text-gray-800">
+                          {task.name}
+                        </div>
+
+                        {categoryNameById.get(task.category_id || "") && (
+                          <span className="ds-badge bg-gray-50">
+                            {categoryNameById.get(task.category_id || "")}
+                          </span>
+                        )}
+                      </label>
                     ))}
-                  </select>
+                  </div>
+
+                  <p className="mt-1 text-xs text-gray-500">
+                    {`اضغط على اسم المهمة لاختيارها ويمكنك استخدام أزرار "تحديد الكل" و"مسح".`}
+                  </p>
                 </div>
 
                 {nextWeekAvailableTasks.length === 0 && (
@@ -445,16 +538,32 @@ export default function ManageWeekTasks({
                   </p>
                 )}
 
+                {selectedTasks.length > 0 && (
+                  <div className="rounded-xl border border-primary-200 bg-primary-50 p-3">
+                    <p className="text-xs font-semibold text-primary-800">
+                      المهام المحددة ({selectedTasks.length})
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedTasks.map((task) => (
+                        <span key={task.id} className="ds-badge-primary">
+                          {task.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {modalError && (
                   <p className="text-xs text-red-600">{modalError}</p>
                 )}
 
                 <div className="flex gap-2 pt-1">
                   <Button
-                    onClick={handleAddTaskToNextWeek}
+                    onClick={handleAddTasksToNextWeek}
                     disabled={
                       savingWeekId === nextWeekData.week.id ||
-                      nextWeekAvailableTasks.length === 0
+                      nextWeekAvailableTasks.length === 0 ||
+                      selectedTaskIds.length === 0
                     }
                     className="flex-1"
                   >
