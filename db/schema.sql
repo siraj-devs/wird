@@ -169,3 +169,30 @@ CREATE INDEX IF NOT EXISTS idx_user_tasks_completed_at ON user_tasks(completed_a
 CREATE INDEX IF NOT EXISTS idx_user_tasks_user_completed ON user_tasks(user_id, completed_at);
 
 ALTER TABLE user_tasks ENABLE ROW LEVEL SECURITY;
+
+
+-- ============================================
+--    MEETING_ATTENDANCE
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS meeting_attendance (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  meeting_date DATE NOT NULL,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  guest_name TEXT,
+  status TEXT NOT NULL CHECK (status IN ('present', 'absent', 'appeal')),
+  CONSTRAINT meeting_attendance_person_required CHECK (
+    user_id IS NOT NULL OR (guest_name IS NOT NULL AND length(trim(guest_name)) > 0)
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_meeting_attendance_date ON meeting_attendance(meeting_date);
+CREATE INDEX IF NOT EXISTS idx_meeting_attendance_user_id ON meeting_attendance(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_meeting_attendance_unique_user_per_day
+  ON meeting_attendance(meeting_date, user_id)
+  WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_meeting_attendance_unique_guest_per_day
+  ON meeting_attendance(meeting_date, lower(trim(guest_name)))
+  WHERE guest_name IS NOT NULL;
+
+ALTER TABLE meeting_attendance ENABLE ROW LEVEL SECURITY;

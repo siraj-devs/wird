@@ -160,56 +160,6 @@ export default async function Page({
   const achievementPercent =
     totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0;
 
-  const dayStats = weekDays.map((date, index) => {
-    const dateKey = toDayKey(date);
-    const dayName = dayNames[date.getDay()];
-
-    const assignedTasks = tasksWithStats.filter((taskStats) =>
-      taskStats.assignedKeys.has(dateKey),
-    );
-
-    const completedTasks = assignedTasks.filter((taskStats) =>
-      taskStats.completedKeys.has(dateKey),
-    ).length;
-
-    const completionPercent =
-      assignedTasks.length > 0
-        ? Math.round((completedTasks / assignedTasks.length) * 100)
-        : 0;
-
-    return {
-      date,
-      index,
-      dateKey,
-      dayName,
-      assignedTasks: assignedTasks.length,
-      completedTasks,
-      completionPercent,
-    };
-  });
-
-  const topTasks = [...tasksWithStats]
-    .map((taskStats) => ({
-      ...taskStats,
-      percent:
-        taskStats.assignedCount > 0
-          ? Math.round((taskStats.completedCount / taskStats.assignedCount) * 100)
-          : 0,
-    }))
-    .sort((left, right) => {
-      if (right.percent !== left.percent) return right.percent - left.percent;
-      if (right.completedCount !== left.completedCount)
-        return right.completedCount - left.completedCount;
-      return left.weekTask.task_name.localeCompare(right.weekTask.task_name, "ar");
-    })
-    .slice(0, 4);
-
-  const busiestDay = [...dayStats].sort(
-    (left, right) => right.completedTasks - left.completedTasks,
-  )[0];
-
-  const strongestTask = topTasks[0] ?? null;
-
   const prevWeek = new Date(weekStart);
   prevWeek.setDate(prevWeek.getDate() - 7);
   const nextWeek = new Date(weekStart);

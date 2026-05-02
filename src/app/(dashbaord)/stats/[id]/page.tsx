@@ -294,9 +294,6 @@ export default async function Page({
     })}`;
   };
 
-  const linkForRange = (targetStart: Date, targetEnd: Date) =>
-    `/stats/${id}?weekFrom=${toDayKey(targetStart)}&weekTo=${toDayKey(targetEnd)}`;
-
   return (
     <div className="ds-page" dir="rtl">
       <section className="ds-card space-y-5">

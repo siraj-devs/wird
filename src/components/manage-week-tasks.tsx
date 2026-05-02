@@ -60,7 +60,7 @@ export default function ManageWeekTasks({
       .sort((a, b) => a.week.start_date.localeCompare(b.week.start_date));
 
     return futureWeeks[0] ?? null;
-  }, [weeks, currentWeekStartKey]);
+  }, [weeks]);
 
   const nextWeekAvailableTasks = useMemo(() => {
     if (!nextWeekData) return [];
@@ -353,7 +353,7 @@ export default function ManageWeekTasks({
                 تأكيد حذف المهمة
               </h3>
               <p className="ds-subtitle mt-1">
-                هل تريد حذف مهمة "{confirmDeleteWeekTask.task_name}" من الأسبوع
+                هل تريد حذف مهمة {confirmDeleteWeekTask.task_name} من الأسبوع
                 القادم؟
               </p>
             </div>

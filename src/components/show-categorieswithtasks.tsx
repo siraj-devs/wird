@@ -70,8 +70,8 @@ export default function ShowCategoriesWithTasks({
 
     try {
       const completedTasks = Array.from(checkedTasks.entries())
-        .filter(([_, isChecked]) => isChecked)
-        .map(([weekTaskId, _]) => {
+        .filter(([, isChecked]) => isChecked)
+        .map(([weekTaskId]) => {
           return {
             week_task_id: weekTaskId,
           };
@@ -102,7 +102,7 @@ export default function ShowCategoriesWithTasks({
   return (
     <div className="grid flex-1 gap-8 pt-24 md:grid-cols-2">
       {!canEditSelectedDate && (
-        <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 md:col-span-2">
           هذا اليوم للعرض فقط. يمكن تسجيل المهام لليوم الحالي أو يوم أمس فقط.
         </div>
       )}
@@ -130,7 +130,7 @@ export default function ShowCategoriesWithTasks({
               </div>
             )}
             <div className="flex flex-col gap-2 rounded-md p-1">
-              {category.tasks.map((task, _) => (
+              {category.tasks.map((task) => (
                 <label
                   key={task.id}
                   htmlFor={`check-${task.id}`}
@@ -181,12 +181,10 @@ export default function ShowCategoriesWithTasks({
           <div className="w-full max-w-3xl rounded-lg border border-gray-200 bg-white p-3 shadow-xs sm:px-6 sm:py-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-              <span className="grid size-6 place-items-center rounded-full bg-amber-200 font-extrabold text-amber-800">
-                !
-              </span>
-              <span className="font-medium">
-                لديك تغييرات غير محفوظة!
-              </span>
+                <span className="grid size-6 place-items-center rounded-full bg-amber-200 font-extrabold text-amber-800">
+                  !
+                </span>
+                <span className="font-medium">لديك تغييرات غير محفوظة!</span>
               </div>
 
               <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-3">

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 export default function LoginLink() {
   const [loading, setLoading] = useState(false);
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleClick = () => {
     setLoading(true);
   };
   return (

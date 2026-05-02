@@ -79,6 +79,14 @@ declare global {
     completed_at: string;
   }
 
+  interface MeetingAttendance {
+    id: string;
+    meeting_date: string;
+    user_id: nullable<string>;
+    guest_name: nullable<string>;
+    status: "present" | "absent" | "appeal";
+  }
+
   interface WeeklySummary {
     week: Week;
     tasks: Array<{

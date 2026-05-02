@@ -366,7 +366,7 @@ export const getUsers = async () => {
       .order("created_at", { ascending: false });
     if (error) throw error;
     return users as User[];
-  } catch (error) {
+  } catch {
     return [];
   }
 };

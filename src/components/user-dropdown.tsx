@@ -88,7 +88,7 @@ export default function UserDropdown({
               </p>
             </div>
 
-            <nav className="flex flex-col text-sm text-gray-700 *:px-3 *:py-2 *:hover:bg-gray-50">
+            <nav className="flex flex-col text-sm text-gray-700 *:px-3 *:py-2 *:text-right *:hover:bg-gray-50">
               {hasRole(user, ["owner", "admin", "member"]) && (
                 <>
                   <button
@@ -124,23 +124,26 @@ export default function UserDropdown({
                       <button
                         type="button"
                         onClick={() => navigateTo("/panel")}
-                        className="cursor-pointer text-right"
                       >
                         إدارة المهام والمستخدمين
                       </button>
                       <button
                         type="button"
                         onClick={() => navigateTo("/panel/weeks")}
-                        className="cursor-pointer text-right"
                       >
                         إدارة الأسابيع
                       </button>
                       <button
                         type="button"
                         onClick={() => navigateTo("/stats")}
-                        className="cursor-pointer text-right"
                       >
                         إحصائيات المستخدمين
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigateTo("/panel/meeting-attendance")}
+                      >
+                        حضور الاجتماعات
                       </button>
                     </>
                   )}
