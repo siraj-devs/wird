@@ -9,6 +9,7 @@ export default function ManageWeekTasks({
   weeks,
   tasks,
   categories,
+  users,
 }: {
   weeks: {
     label: string;
@@ -17,6 +18,7 @@ export default function ManageWeekTasks({
   }[];
   tasks: Task[];
   categories: Category[];
+  users: User[];
 }) {
   const router = useRouter();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -33,6 +35,15 @@ export default function ManageWeekTasks({
   const [deleteErrorByWeek, setDeleteErrorByWeek] = useState<
     Record<string, string>
   >({});
+  const [assignmentModalTask, setAssignmentModalTask] =
+    useState<WeekTask | null>(null);
+  const [selectedAssignedUserIds, setSelectedAssignedUserIds] = useState<
+    string[]
+  >([]);
+  const [assignmentSavingTaskId, setAssignmentSavingTaskId] = useState<
+    string | null
+  >(null);
+  const [assignmentError, setAssignmentError] = useState("");
 
   const categoryNameById = useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
@@ -103,6 +114,12 @@ export default function ManageWeekTasks({
         selectedTaskIds.includes(task.id),
       ),
     [nextWeekAvailableTasks, selectedTaskIds],
+  );
+
+  const selectedAssignedUsers = useMemo(
+    () =>
+      users.filter((user) => selectedAssignedUserIds.includes(user.id)),
+    [users, selectedAssignedUserIds],
   );
 
   const toArabicRange = (startDate: string) => {
@@ -241,6 +258,73 @@ export default function ManageWeekTasks({
     }
   };
 
+  const openAssignmentModal = (weekTask: WeekTask) => {
+    setAssignmentModalTask(weekTask);
+    setSelectedAssignedUserIds(weekTask.assigned_user_ids ?? []);
+    setAssignmentError("");
+  };
+
+  const toggleAssignedUser = (userId: string) => {
+    setSelectedAssignedUserIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
+    );
+  };
+
+  const saveTaskAssignment = async () => {
+    if (!assignmentModalTask) return;
+
+    setAssignmentSavingTaskId(assignmentModalTask.id);
+    setAssignmentError("");
+
+    try {
+      if (selectedAssignedUserIds.length === 0) {
+        const clearResponse = await fetch(
+          `/api/week-tasks/assignments?week_task_id=${assignmentModalTask.id}`,
+          {
+            method: "DELETE",
+          },
+        );
+
+        const clearResponseData = await clearResponse.json();
+
+        if (!clearResponse.ok) {
+          throw new Error(
+            clearResponseData.error || "فشل في مسح التخصيصات",
+          );
+        }
+      } else {
+        const assignResponse = await fetch("/api/week-tasks/assignments", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            week_task_id: assignmentModalTask.id,
+            user_ids: selectedAssignedUserIds,
+          }),
+        });
+
+        const assignResponseData = await assignResponse.json();
+
+        if (!assignResponse.ok) {
+          throw new Error(assignResponseData.error || "فشل في حفظ التخصيصات");
+        }
+      }
+
+      setAssignmentModalTask(null);
+      setSelectedAssignedUserIds([]);
+      router.refresh();
+    } catch (error) {
+      setAssignmentError(
+        error instanceof Error ? error.message : "حدث خطأ أثناء حفظ التخصيص",
+      );
+    } finally {
+      setAssignmentSavingTaskId(null);
+    }
+  };
+
   return (
     <section className="ds-card">
       <div className="ds-section-header">
@@ -329,6 +413,28 @@ export default function ManageWeekTasks({
                         <span className="ds-badge-primary">
                           {weekTask.task_days?.length ?? ALL_DAYS.length} أيام
                         </span>
+
+                        <span
+                          className={
+                            (weekTask.assigned_user_ids?.length ?? 0) > 0
+                              ? "ds-badge bg-amber-50 text-amber-700"
+                              : "ds-badge bg-emerald-50 text-emerald-700"
+                          }
+                        >
+                          {(weekTask.assigned_user_ids?.length ?? 0) > 0
+                            ? `مخصص (${weekTask.assigned_user_ids?.length ?? 0})`
+                            : "للجميع"}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => openAssignmentModal(weekTask)}
+                          title="تخصيص المهمة للمستخدمين"
+                          aria-label="تخصيص المهمة للمستخدمين"
+                          className="inline-flex h-7 items-center rounded-md border border-indigo-200 bg-indigo-50 px-2 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-100 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+                        >
+                          تخصيص
+                        </button>
 
                         {isNextWeek && (
                           <button
@@ -420,6 +526,107 @@ export default function ManageWeekTasks({
                 variant="secondary"
                 onClick={() => setConfirmDeleteWeekTask(null)}
                 disabled={deletingWeekTaskId === confirmDeleteWeekTask.id}
+              >
+                إلغاء
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {assignmentModalTask && (
+        <div className="ds-modal-overlay">
+          <div className="ds-modal ds-modal-scroll space-y-4">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">
+                تخصيص المهمة للمستخدمين
+              </h3>
+              <p className="ds-subtitle mt-1">
+                المهمة: {assignmentModalTask.task_name}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                إذا لم تختَر أي مستخدم، ستظهر المهمة للجميع.
+              </p>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-700">المستخدمون</p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedAssignedUserIds([])}
+                  disabled={selectedAssignedUserIds.length === 0}
+                  className="rounded-md border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                >
+                  إلغاء تحديد الكل
+                </button>
+              </div>
+
+              <div className="max-h-56 space-y-1 overflow-auto rounded border border-gray-200 bg-white p-2">
+                {users.map((user) => (
+                  <label
+                    key={user.id}
+                    htmlFor={`assign-user-${user.id}`}
+                    className="flex items-center gap-2 rounded p-2 hover:bg-gray-50 has-checked:bg-indigo-50"
+                  >
+                    <input
+                      type="checkbox"
+                      id={`assign-user-${user.id}`}
+                      checked={selectedAssignedUserIds.includes(user.id)}
+                      onChange={() => toggleAssignedUser(user.id)}
+                      className="ds-input hidden"
+                    />
+
+                    <div className="flex-1 text-sm text-gray-800">
+                      {user.full_name || user.username}
+                    </div>
+
+                    <span className="ds-badge bg-gray-50 text-gray-600">
+                      {user.role}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              {selectedAssignedUsers.length > 0 && (
+                <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50 p-3">
+                  <p className="text-xs font-semibold text-indigo-800">
+                    المستخدمون المحددون ({selectedAssignedUsers.length})
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {selectedAssignedUsers.map((user) => (
+                      <span key={user.id} className="ds-badge bg-white text-indigo-700">
+                        {user.full_name || user.username}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {assignmentError && (
+              <p className="text-xs text-red-600">{assignmentError}</p>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <Button
+                type="button"
+                onClick={saveTaskAssignment}
+                disabled={assignmentSavingTaskId === assignmentModalTask.id}
+                className="flex-1"
+              >
+                {assignmentSavingTaskId === assignmentModalTask.id
+                  ? "جاري الحفظ..."
+                  : "حفظ"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setAssignmentModalTask(null);
+                  setAssignmentError("");
+                }}
+                disabled={assignmentSavingTaskId === assignmentModalTask.id}
               >
                 إلغاء
               </Button>

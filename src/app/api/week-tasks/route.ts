@@ -40,7 +40,35 @@ export async function GET(request: NextRequest) {
 
     if (error) throw new APIError(500, error.message);
 
-    return NextResponse.json({ weekTasks });
+    // Fetch assignments for all week tasks
+    const { data: assignments, error: assignmentError } = await supabaseAdmin
+      .from("week_task_assignments")
+      .select("week_task_id, user_id")
+      .in("week_task_id", (weekTasks || []).map(t => t.id));
+
+    if (assignmentError) throw new APIError(500, assignmentError.message);
+
+    // Build assignment map
+    const assignmentMap = new Map<string, string[]>();
+    (assignments || []).forEach(assignment => {
+      const userIds = assignmentMap.get(assignment.week_task_id) || [];
+      userIds.push(assignment.user_id);
+      assignmentMap.set(assignment.week_task_id, userIds);
+    });
+
+    // Filter tasks based on assignments
+    const filteredTasks = (weekTasks || []).map(task => ({
+      ...task,
+      assigned_user_ids: assignmentMap.get(task.id) || [],
+      is_assigned_only: (assignmentMap.get(task.id) || []).length > 0
+    })).filter(task => {
+      // If task is not assigned to anyone, show to all users
+      if (!task.is_assigned_only) return true;
+      // If task is assigned, show only to assigned users
+      return task.assigned_user_ids.includes(payload.userId);
+    });
+
+    return NextResponse.json({ weekTasks: filteredTasks });
   } catch (error: unknown) {
     if (error instanceof APIError) {
       return NextResponse.json(

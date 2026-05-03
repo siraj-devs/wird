@@ -72,6 +72,67 @@ const getAppDayOfWeek = (date: Date): number => {
   return ((date.getDay() + 1) % 7) + 1;
 };
 
+const attachAssignmentMetadata = async (
+  weekTasks: WeekTask[],
+): Promise<WeekTask[]> => {
+  if (weekTasks.length === 0) return [];
+
+  const { data: assignments, error: assignmentsError } = await supabaseAdmin
+    .from("week_task_assignments")
+    .select("week_task_id, user_id")
+    .in(
+      "week_task_id",
+      weekTasks.map((task) => task.id),
+    );
+
+  if (assignmentsError) throw assignmentsError;
+
+  const assignmentMap = new Map<string, string[]>();
+
+  for (const assignment of assignments ?? []) {
+    const current = assignmentMap.get(assignment.week_task_id) ?? [];
+    current.push(assignment.user_id);
+    assignmentMap.set(assignment.week_task_id, current);
+  }
+
+  return weekTasks.map((task) => {
+    const assignedUserIds = assignmentMap.get(task.id) ?? [];
+
+    return {
+      ...task,
+      assigned_user_ids: assignedUserIds,
+      is_assigned_only: assignedUserIds.length > 0,
+    };
+  });
+};
+
+export const getVisibleWeekTasksForUser = async (
+  weekId: string,
+  userId: string,
+): Promise<WeekTask[]> => {
+  try {
+    const { data: weekTasks, error } = await supabaseAdmin
+      .from("week_tasks")
+      .select("*")
+      .eq("week_id", weekId)
+      .order("sort_order", { ascending: true });
+
+    if (error) throw error;
+
+    const weekTasksWithAssignments = await attachAssignmentMetadata(
+      (weekTasks ?? []) as WeekTask[],
+    );
+
+    return weekTasksWithAssignments.filter((weekTask) => {
+      if (!weekTask.is_assigned_only) return true;
+      return (weekTask.assigned_user_ids ?? []).includes(userId);
+    });
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
 // Helper to get Saturday of a given week
 const getWeekStart = (date: Date): Date => {
   const d = new Date(date);
@@ -121,13 +182,15 @@ export const getWeekTasksForUser = async (
   targetDate: Date = new Date(),
 ): Promise<(WeekTask & { completed_at: string | null })[]> => {
   try {
-    const { data: weekTasks, error } = await supabaseAdmin
-      .from("week_tasks")
-      .select("*")
-      .eq("week_id", weekId)
-      .order("sort_order", { ascending: true });
+    const weekTasks = await getVisibleWeekTasksForUser(weekId, userId);
 
-    if (error) throw error;
+    if (weekTasks.length === 0) {
+      return [];
+    }
+
+    const weekTasksWithAssignments = await attachAssignmentMetadata(
+      weekTasks,
+    );
 
     // Get user completions for this week
     const { data: completions } = await supabaseAdmin
@@ -136,7 +199,7 @@ export const getWeekTasksForUser = async (
       .eq("user_id", userId)
       .in(
         "week_task_id",
-        weekTasks.map((wt) => wt.id)
+        weekTasksWithAssignments.map((weekTask) => weekTask.id),
       );
 
     const selectedDayCompletions = (completions ?? []).filter((completion) => {
@@ -149,7 +212,7 @@ export const getWeekTasksForUser = async (
     );
 
     // Merge data
-    return weekTasks.map((wt) => ({
+    return weekTasksWithAssignments.map((wt) => ({
       ...wt,
       completed_at: completionMap.get(wt.id) ?? null,
     })) as (WeekTask & { completed_at: string | null })[];
@@ -270,11 +333,15 @@ export const getCurrentAndNextWeeksTasks = async (): Promise<
 
       if (currentError) throw currentError;
 
+      const currentWeekTasksWithAssignments = await attachAssignmentMetadata(
+        (currentWeekTasks ?? []) as WeekTask[],
+      );
+
       return [
         {
           label: "الأسبوع الحالي",
           week: currentWeek,
-          tasks: (currentWeekTasks ?? []) as WeekTask[],
+          tasks: currentWeekTasksWithAssignments,
         },
       ];
     }
@@ -289,8 +356,12 @@ export const getCurrentAndNextWeeksTasks = async (): Promise<
 
     if (error) throw error;
 
+    const weekTasksWithAssignments = await attachAssignmentMetadata(
+      (weekTasks ?? []) as WeekTask[],
+    );
+
     const grouped = new Map<string, WeekTask[]>();
-    for (const task of (weekTasks ?? []) as WeekTask[]) {
+    for (const task of weekTasksWithAssignments) {
       const list = grouped.get(task.week_id) ?? [];
       list.push(task);
       grouped.set(task.week_id, list);
@@ -341,8 +412,12 @@ export const getAllWeeksWithTasks = async (): Promise<
 
     if (tasksError) throw tasksError;
 
+    const weekTasksWithAssignments = await attachAssignmentMetadata(
+      (weekTasks ?? []) as WeekTask[],
+    );
+
     const groupedTasks = new Map<string, WeekTask[]>();
-    for (const task of (weekTasks ?? []) as WeekTask[]) {
+    for (const task of weekTasksWithAssignments) {
       const list = groupedTasks.get(task.week_id) ?? [];
       list.push(task);
       groupedTasks.set(task.week_id, list);
@@ -370,3 +445,71 @@ export const getUsers = async () => {
     return [];
   }
 };
+
+// Get assignments for a week task
+export const getWeekTaskAssignments = async (weekTaskId: string) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("week_task_assignments")
+      .select("user_id")
+      .eq("week_task_id", weekTaskId);
+    if (error) throw error;
+    return (data || []).map(item => item.user_id) as string[];
+  } catch {
+    return [];
+  }
+};
+
+// Assign a week task to users
+export const assignWeekTaskToUsers = async (
+  weekTaskId: string,
+  userIds: string[]
+): Promise<boolean> => {
+  try {
+    // Delete existing assignments
+    await supabaseAdmin
+      .from("week_task_assignments")
+      .delete()
+      .eq("week_task_id", weekTaskId);
+
+    // If userIds is empty, task is visible to all
+    if (userIds.length === 0) {
+      return true;
+    }
+
+    // Create new assignments
+    const assignments = userIds.map(userId => ({
+      week_task_id: weekTaskId,
+      user_id: userId
+    }));
+
+    const { error } = await supabaseAdmin
+      .from("week_task_assignments")
+      .insert(assignments);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error assigning week task:", error);
+    return false;
+  }
+};
+
+// Remove assignments from a week task (make it visible to all)
+export const clearWeekTaskAssignments = async (
+  weekTaskId: string
+): Promise<boolean> => {
+  try {
+    const { error } = await supabaseAdmin
+      .from("week_task_assignments")
+      .delete()
+      .eq("week_task_id", weekTaskId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error clearing assignments:", error);
+    return false;
+  }
+};
+

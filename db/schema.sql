@@ -153,6 +153,23 @@ ALTER TABLE week_tasks ENABLE ROW LEVEL SECURITY;
 
 
 -- ============================================
+--    WEEK_TASK_ASSIGNMENTS (NEW)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS week_task_assignments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  week_task_id UUID NOT NULL REFERENCES week_tasks(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT unique_week_task_user UNIQUE(week_task_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_week_task_assignments_week_task_id ON week_task_assignments(week_task_id);
+CREATE INDEX IF NOT EXISTS idx_week_task_assignments_user_id ON week_task_assignments(user_id);
+
+ALTER TABLE week_task_assignments ENABLE ROW LEVEL SECURITY;
+
+
+-- ============================================
 --    USER_TASKS
 -- ============================================
 

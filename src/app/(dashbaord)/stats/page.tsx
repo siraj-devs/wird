@@ -113,6 +113,24 @@ export default async function Page({
         .order("sort_order", { ascending: true })
     : { data: [] as WeekTask[] };
 
+  const { data: assignments } = (weekTasks ?? []).length
+    ? await supabaseAdmin
+        .from("week_task_assignments")
+        .select("week_task_id, user_id")
+        .in(
+          "week_task_id",
+          (weekTasks ?? []).map((weekTask) => weekTask.id),
+        )
+    : { data: [] as { week_task_id: string; user_id: string }[] };
+
+  const assignmentMap = new Map<string, string[]>();
+
+  for (const assignment of assignments ?? []) {
+    const current = assignmentMap.get(assignment.week_task_id) ?? [];
+    current.push(assignment.user_id);
+    assignmentMap.set(assignment.week_task_id, current);
+  }
+
   const selectedWeekDays = new Map(
     selectedWeeks.map((week) => [week.id, getWeekDates(week.start_date)]),
   );
@@ -171,6 +189,10 @@ export default async function Page({
 
   const rows = filteredUsers.map((user) => {
     const completionsForUser = userCompletionMap.get(user.id) ?? new Map();
+    const visibleWeekTasks = (weekTasks ?? []).filter((weekTask) => {
+      const assignedUserIds = assignmentMap.get(weekTask.id) ?? [];
+      return assignedUserIds.length === 0 || assignedUserIds.includes(user.id);
+    });
 
     let completedCount = 0;
     let possibleCount = 0;
@@ -178,7 +200,7 @@ export default async function Page({
       let weekPossible = 0;
       let weekCompleted = 0;
 
-      for (const weekTask of (weekTasks ?? []).filter(
+      for (const weekTask of visibleWeekTasks.filter(
         (task) => task.week_id === week.id,
       ) as WeekTask[]) {
         const assignedKeys = weekTaskDaysById.get(weekTask.id) ?? new Set();

@@ -68,6 +68,14 @@ declare global {
     category_id: nullable<string>;
     category_name: nullable<string>;
     sort_order: number;
+    is_assigned_only?: boolean;
+    assigned_user_ids?: string[];
+  }
+
+  interface WeekTaskAssignment {
+    id: string;
+    week_task_id: string;
+    user_id: string;
   }
 
   interface UserTask {

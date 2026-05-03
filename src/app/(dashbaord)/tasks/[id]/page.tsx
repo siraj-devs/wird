@@ -2,6 +2,7 @@ import { ALL_DAYS } from "@/lib";
 import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getVisibleWeekTasksForUser } from "@/actions";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -81,14 +82,7 @@ export default async function Page({
 
   if (!weekData) redirect("/tasks");
 
-  // Get week tasks
-  const { data: weekTasks, error: weekTasksError } = await supabaseAdmin
-    .from("week_tasks")
-    .select("*")
-    .eq("week_id", weekData.id)
-    .order("sort_order", { ascending: true });
-
-  if (weekTasksError || !weekTasks) redirect("/tasks");
+  const weekTasks = await getVisibleWeekTasksForUser(weekData.id, id);
 
   // Get user completions for this week
   const { data: completions } = await supabaseAdmin

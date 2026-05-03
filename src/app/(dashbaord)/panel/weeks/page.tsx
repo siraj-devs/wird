@@ -3,6 +3,7 @@ import {
   getCategories,
   getCurrentAndNextWeeksTasks,
   getTasks,
+  getUsers,
 } from "@/actions";
 import ManageWeekTasks from "@/components/manage-week-tasks";
 import { ALL_DAYS } from "@/lib";
@@ -26,16 +27,22 @@ const toArabicRange = (startDate: string) => {
 export default async function Page() {
   await checkRole([ROLES.OWNER]);
 
-  const [categories, tasks, weeksWithTasks, weeks] = await Promise.all([
+  const [categories, tasks, weeksWithTasks, weeks, users] = await Promise.all([
     getCategories(),
     getTasks(),
     getAllWeeksWithTasks(),
     getCurrentAndNextWeeksTasks(),
+    getUsers(),
   ]);
 
   return (
     <div className="ds-page">
-      <ManageWeekTasks weeks={weeks} tasks={tasks} categories={categories} />
+      <ManageWeekTasks
+        weeks={weeks}
+        tasks={tasks}
+        categories={categories}
+        users={users}
+      />
 
       {weeksWithTasks.length === 0 ? (
         <section className="ds-card">

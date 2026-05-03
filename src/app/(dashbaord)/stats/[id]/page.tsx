@@ -2,6 +2,7 @@ import { ALL_DAYS } from "@/lib";
 import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getVisibleWeekTasksForUser } from "@/actions";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 
@@ -123,14 +124,14 @@ export default async function Page({
     selectedWeeks.map((weekItem) => [weekItem.id, weekItem]),
   );
 
-  const { data: weekTasks, error: weekTasksError } = await supabaseAdmin
-    .from("week_tasks")
-    .select("*")
-    .in("week_id", selectedWeekIds)
-    .order("week_id", { ascending: true })
-    .order("sort_order", { ascending: true });
+  const weekTasksByWeek = await Promise.all(
+    selectedWeekIds.map(async (weekId) => ({
+      weekId,
+      tasks: await getVisibleWeekTasksForUser(weekId, id),
+    })),
+  );
 
-  if (weekTasksError || !weekTasks) redirect("/tasks");
+  const weekTasks = weekTasksByWeek.flatMap(({ tasks }) => tasks);
 
   const { data: completions } = await supabaseAdmin
     .from("user_tasks")
