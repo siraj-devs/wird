@@ -98,6 +98,13 @@ export default function UserDropdown({
                   >
                     متابعة مهامي
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo("/feedback")}
+                    className="cursor-pointer text-right"
+                  >
+                    تقييم الرحلة
+                  </button>
                   {canTrackMembers && (
                     <button
                       type="button"

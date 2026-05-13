@@ -189,6 +189,24 @@ ALTER TABLE user_tasks ENABLE ROW LEVEL SECURITY;
 
 
 -- ============================================
+--    FEEDBACKS
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS feedbacks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  answers JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT unique_feedback_user UNIQUE(user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedbacks_user_id ON feedbacks(user_id);
+CREATE INDEX IF NOT EXISTS idx_feedbacks_created_at ON feedbacks(created_at);
+
+ALTER TABLE feedbacks ENABLE ROW LEVEL SECURITY;
+
+
+-- ============================================
 --    MEETING_ATTENDANCE
 -- ============================================
 

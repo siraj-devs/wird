@@ -95,6 +95,13 @@ declare global {
     status: "present" | "absent" | "appeal";
   }
 
+  interface Feedback {
+    id: string;
+    user_id: string;
+    answers: Record<string, unknown>;
+    created_at: string;
+  }
+
   interface WeeklySummary {
     week: Week;
     tasks: Array<{
