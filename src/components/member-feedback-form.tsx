@@ -86,9 +86,9 @@ export default function MemberFeedbackForm({
   const starOptions = useMemo(() => ["1", "2", "3", "4", "5"], []);
 
   const isFormComplete = useMemo(() => {
-    const requiredRadioIds = ["q1", "q3", "q5", "q8", "q12"];
-    const requiredTextIds = ["q2", "q6", "q7b", "q9", "q11"];
-    const requiredShortIds = ["q4", "q7"];
+    const requiredRadioIds = ["1", "3", "5", "8", "13"];
+    const requiredTextIds = ["2", "6", "9", "10", "12"];
+    const requiredShortIds = ["4", "7"];
 
     const hasValue = (value?: string) => Boolean(value?.trim());
 
@@ -96,9 +96,7 @@ export default function MemberFeedbackForm({
     const textFilled = requiredTextIds.every((id) => hasValue(answers[id]));
     const shortFilled = requiredShortIds.every((id) => hasValue(answers[id]));
 
-    return (
-      radiosFilled && textFilled && shortFilled && hasValue(answers.rating)
-    );
+    return radiosFilled && textFilled && shortFilled && hasValue(answers["11"]);
   }, [answers]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -172,52 +170,52 @@ export default function MemberFeedbackForm({
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <RadioGroup
-            id="q1"
+            id="1"
             label="1. أي المحطات كانت الأكثر ملامسة لقلبك وأحدثت فيك أثراً ملموساً؟"
             options={["الإخلاص", "الإيمان", "الصلاة", "الآخرة", "القرآن"]}
-            value={answers.q1}
+            value={answers["1"]}
             onChange={(value) =>
-              setAnswers((prev) => ({ ...prev, q1: value }))
+              setAnswers((prev) => ({ ...prev, "1": value }))
             }
           />
 
           <TextareaField
-            id="q2"
+            id="2"
             label="2. لماذا هذا الموضوع تحديداً؟"
             placeholder="اكتب السبب هنا"
-            value={answers.q2}
+            value={answers["2"]}
             onChange={(value) =>
-              setAnswers((prev) => ({ ...prev, q2: value }))
+              setAnswers((prev) => ({ ...prev, "2": value }))
             }
           />
 
           <RadioGroup
-            id="q3"
+            id="3"
             label="3. بخصوص القراءة والاستماع الأسبوعي كيف تجد مستواها؟"
             options={[
               "سهلة وميسرة",
               "متوسطة وتحتاج جهداً",
               "دسمة جداً وصعبة الاستيعاب",
             ]}
-            value={answers.q3}
+            value={answers["3"]}
             onChange={(value) =>
-              setAnswers((prev) => ({ ...prev, q3: value }))
+              setAnswers((prev) => ({ ...prev, "3": value }))
             }
           />
 
           <div className="space-y-2">
             <label
-              htmlFor="q4"
+              htmlFor="4"
               className="block text-sm font-medium text-gray-700"
             >
               4. موضوع تحب أن نضيفه في الرحلة القادمة؟
             </label>
             <input
-              id="q4"
+              id="4"
               type="text"
-              value={answers.q4 ?? ""}
+              value={answers["4"] ?? ""}
               onChange={(event) =>
-                setAnswers((prev) => ({ ...prev, q4: event.target.value }))
+                setAnswers((prev) => ({ ...prev, "4": event.target.value }))
               }
               className="ds-input"
               placeholder="مثال: موضوع عن ..."
@@ -226,7 +224,7 @@ export default function MemberFeedbackForm({
           </div>
 
           <RadioGroup
-            id="q5"
+            id="5"
             label="5. أي من الأعمال الدورية شعرت أنها أصبحت جزءاً من يومك ولم تعد مجرد تكليف؟"
             options={[
               "إدراك تكبيرة الإحرام جماعة",
@@ -234,35 +232,35 @@ export default function MemberFeedbackForm({
               "المحافظة على السنن الرواتب",
               "المحافظة على أذكار الصباح والمساء والنوم والصلاة",
             ]}
-            value={answers.q5}
+            value={answers["5"]}
             onChange={(value) =>
-              setAnswers((prev) => ({ ...prev, q5: value }))
+              setAnswers((prev) => ({ ...prev, "5": value }))
             }
           />
 
           <TextareaField
-            id="q6"
+            id="6"
             label="6. ما هو التحدي الأكبر الذي واجهك في الالتزام بالعمل الأسبوعي؟ وكيف تجاوزته؟"
             placeholder="اكتب تفاصيل تجربتك"
-            value={answers.q6}
+            value={answers["6"]}
             onChange={(value) =>
-              setAnswers((prev) => ({ ...prev, q6: value }))
+              setAnswers((prev) => ({ ...prev, "6": value }))
             }
           />
 
           <div className="space-y-2">
             <label
-              htmlFor="q7"
+              htmlFor="7"
               className="block text-sm font-medium text-gray-700"
             >
               7. عمل تود أن نضيفه للرحلة القادمة؟
             </label>
             <input
-              id="q7"
+              id="7"
               type="text"
-              value={answers.q7 ?? ""}
+              value={answers["7"] ?? ""}
               onChange={(event) =>
-                setAnswers((prev) => ({ ...prev, q7: event.target.value }))
+                setAnswers((prev) => ({ ...prev, "7": event.target.value }))
               }
               className="ds-input"
               placeholder="اكتب اقتراحك"
@@ -271,51 +269,51 @@ export default function MemberFeedbackForm({
           </div>
 
           <RadioGroup
-            id="q8"
+            id="8"
             label="8. كيف تصف تجربة مجلس الذكر في التأثير على ثباتك طوال الأسبوع؟"
             options={[
               "كانت الدافع الأساسي للاستمرار.",
               "كانت مفيدة لكنها تحتاج تنظيماً أكثر.",
               "لم أشعر بأثرها الكبير.",
             ]}
-            value={answers.q8}
+            value={answers["8"]}
             onChange={(value) =>
-              setAnswers((prev) => ({ ...prev, q8: value }))
+              setAnswers((prev) => ({ ...prev, "8": value }))
             }
           />
 
           <TextareaField
-            id="q7b"
-            label="7. ماذا تقترح لتطوير مجلس الذكر الأسبوعي؟"
+            id="9"
+            label="9. ماذا تقترح لتطوير مجلس الذكر الأسبوعي؟"
             placeholder="اقتراحاتك هنا"
-            value={answers.q7b}
+            value={answers["9"]}
             onChange={(value) =>
-              setAnswers((prev) => ({ ...prev, q7b: value }))
+              setAnswers((prev) => ({ ...prev, "9": value }))
             }
           />
 
           <TextareaField
-            id="q9"
+            id="10"
             label={
-              '9. "لحظة معراج".. اذكر موقفاً أو شعوراً مرّ بك خلال هذه الأسابيع الخمسة شعرت فيه بقرب من الله.'
+              '10. "لحظة معراج".. اذكر موقفاً أو شعوراً مرّ بك خلال هذه الأسابيع الخمسة شعرت فيه بقرب من الله.'
             }
             placeholder="اكتب الموقف أو الشعور"
-            value={answers.q9}
+            value={answers["10"]}
             onChange={(value) =>
-              setAnswers((prev) => ({ ...prev, q9: value }))
+              setAnswers((prev) => ({ ...prev, "10": value }))
             }
           />
 
           <fieldset className="space-y-2">
             <legend className="block text-sm font-medium text-gray-700">
-              10. تقييمك النهائي للرحلة:
+              11. تقييمك النهائي للرحلة:
             </legend>
             <div className="flex flex-wrap gap-2">
               {starOptions.map((value) => (
                 <label
                   key={value}
                   className={
-                    answers.rating === value
+                    answers["11"] === value
                       ? "flex items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-800"
                       : "flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800"
                   }
@@ -324,11 +322,11 @@ export default function MemberFeedbackForm({
                     type="radio"
                     name="rating"
                     value={value}
-                    checked={answers.rating === value}
+                    checked={answers["11"] === value}
                     onChange={(event) =>
                       setAnswers((prev) => ({
                         ...prev,
-                        rating: event.target.value,
+                        "11": event.target.value,
                       }))
                     }
                     className="h-4 w-4 accent-primary-600"
@@ -341,22 +339,22 @@ export default function MemberFeedbackForm({
           </fieldset>
 
           <TextareaField
-            id="q11"
-            label="11. كلمة لمن سيخوض رحلة معارج الإيمان من بعدك.."
+            id="12"
+            label="12. كلمة لمن سيخوض رحلة معارج الإيمان من بعدك.."
             placeholder="اكتب رسالتك"
-            value={answers.q11}
+            value={answers["12"]}
             onChange={(value) =>
-              setAnswers((prev) => ({ ...prev, q11: value }))
+              setAnswers((prev) => ({ ...prev, "12": value }))
             }
           />
 
           <RadioGroup
-            id="q12"
-            label="12. هل تود أن تكون من المشرفين في النسخة القادمة؟"
+            id="13"
+            label="13. هل تود أن تكون من المشرفين في النسخة القادمة؟"
             options={["نعم، يسعدني ذلك", "أكتفي بكوني خريجا لهذه الرحلة"]}
-            value={answers.q12}
+            value={answers["13"]}
             onChange={(value) =>
-              setAnswers((prev) => ({ ...prev, q12: value }))
+              setAnswers((prev) => ({ ...prev, "13": value }))
             }
           />
 
