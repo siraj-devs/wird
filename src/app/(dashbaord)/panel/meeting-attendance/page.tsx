@@ -92,7 +92,7 @@ export default async function Page({
     username: user.username || "user",
   }));
 
-  const appAttendees = trackedUsers
+  const appAttendees = users
     .map((user) => {
       const record = recordByUserId.get(user.id);
       if (!record) return null;
