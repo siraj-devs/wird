@@ -105,6 +105,15 @@ export default function UserDropdown({
                   >
                     تقييم الرحلة
                   </button>
+                  {user.friend_id && (
+                    <button
+                      type="button"
+                      onClick={() => navigateTo(`/tasks/${user.friend_id}`)}
+                      className="cursor-pointer text-right"
+                    >
+                      متابعة الصديق
+                    </button>
+                  )}
                   {canTrackMembers && (
                     <button
                       type="button"
@@ -117,15 +126,6 @@ export default function UserDropdown({
                       متابعة الأعضاء
                     </button>
                   )}
-                  {user.friend_id && (
-                    <button
-                      type="button"
-                      onClick={() => navigateTo(`/tasks/${user.friend_id}`)}
-                      className="cursor-pointer text-right"
-                    >
-                      متابعة الصديق
-                    </button>
-                  )}
                   {hasRole(user, ["owner"]) && (
                     <>
                       <button
@@ -133,24 +133,6 @@ export default function UserDropdown({
                         onClick={() => navigateTo("/panel")}
                       >
                         إدارة المهام والمستخدمين
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navigateTo("/panel/weeks")}
-                      >
-                        إدارة الأسابيع
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navigateTo("/stats")}
-                      >
-                        إحصائيات المستخدمين
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navigateTo("/panel/meeting-attendance")}
-                      >
-                        حضور الاجتماعات
                       </button>
                     </>
                   )}
