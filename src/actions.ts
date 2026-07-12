@@ -1,4 +1,8 @@
 import { supabaseAdmin } from "./lib/supabase";
+import {
+  getWeekOrderByStartDate,
+  sortProgramWeeksByStartDate,
+} from "./lib/program-weeks";
 
 export const getUser = async (id: string) => {
   try {
@@ -109,13 +113,22 @@ const attachAssignmentMetadata = async (
 export const getVisibleWeekTasksForUser = async (
   weekId: string,
   userId: string,
+  programId: string | null = null,
 ): Promise<WeekTask[]> => {
   try {
-    const { data: weekTasks, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from("week_tasks")
       .select("*")
       .eq("week_id", weekId)
       .order("sort_order", { ascending: true });
+
+    if (programId) {
+      query = query.eq("program_id", programId);
+    } else {
+      query = query.is("program_id", null);
+    }
+
+    const { data: weekTasks, error } = await query;
 
     if (error) throw error;
 
@@ -180,9 +193,14 @@ export const getWeekTasksForUser = async (
   weekId: string,
   userId: string,
   targetDate: Date = new Date(),
+  programId: string | null = null,
 ): Promise<(WeekTask & { completed_at: string | null })[]> => {
   try {
-    const weekTasks = await getVisibleWeekTasksForUser(weekId, userId);
+    const weekTasks = await getVisibleWeekTasksForUser(
+      weekId,
+      userId,
+      programId,
+    );
 
     if (weekTasks.length === 0) {
       return [];
@@ -223,36 +241,138 @@ export const getWeekTasksForUser = async (
 };
 
 // Get user tasks for a selected day (default: today)
+const groupUserTasksByCategory = (tasks: UserTask[]): UserTaskCategoryGroup[] => {
+  return Object.entries(
+    tasks.reduce((groups: Record<string, UserTask[]>, task) => {
+      const category = task.category_name || "";
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(task);
+      return groups;
+    }, {}),
+  )
+    .sort(([keyA], [keyB]) => {
+      if (keyA === "") return 1;
+      if (keyB === "") return -1;
+      return 0;
+    })
+    .map(([name, categoryTasks]) => ({
+      name,
+      completed: categoryTasks.filter(
+        (task) => task.completed_at !== null && task.completed_at !== "",
+      ).length,
+      total: categoryTasks.length,
+      tasks: categoryTasks,
+    }));
+};
+
+const getUserTasksForProgram = async (
+  userId: string,
+  targetDate: Date,
+  programId: string | null,
+): Promise<UserTask[]> => {
+  const week = await getOrCreateWeek(targetDate);
+  if (!week) return [];
+
+  const weekTasks = await getWeekTasksForUser(
+    week.id,
+    userId,
+    targetDate,
+    programId,
+  );
+
+  const selectedDayOfWeek = getAppDayOfWeek(targetDate);
+
+  return weekTasks
+    .filter(
+      (wt) =>
+        !wt.task_days ||
+        wt.task_days.length === 0 ||
+        wt.task_days.includes(selectedDayOfWeek),
+    )
+    .map((wt) => ({
+      id: wt.id,
+      user_id: userId,
+      week_task_id: wt.id,
+      task_name: wt.task_name,
+      category_name: wt.category_name ?? null,
+      completed_at: wt.completed_at ?? "",
+    })) as UserTask[];
+};
+
 export const getUserTasks = async (
   userId: string,
   targetDate: Date = new Date(),
 ): Promise<UserTask[]> => {
   try {
-    const week = await getOrCreateWeek(targetDate);
-    if (!week) return [];
-
-    const weekTasks = await getWeekTasksForUser(week.id, userId, targetDate);
-
-    const selectedDayOfWeek = getAppDayOfWeek(targetDate);
-
-    return weekTasks
-      .filter(
-        (wt) =>
-          !wt.task_days ||
-          wt.task_days.length === 0 ||
-          wt.task_days.includes(selectedDayOfWeek),
-      )
-      .map((wt) => ({
-        id: wt.id,
-        user_id: userId,
-        week_task_id: wt.id,
-        task_name: wt.task_name,
-        category_name: wt.category_name ?? null,
-        completed_at: wt.completed_at ?? "",
-      })) as UserTask[];
+    const { sections } = await getUserProgramTasksSections(userId, targetDate);
+    return sections.flatMap((section) => section.tasks);
   } catch (error) {
     console.error(error);
     return [];
+  }
+};
+
+export const getUserProgramTasksSections = async (
+  userId: string,
+  targetDate: Date = new Date(),
+): Promise<{
+  sections: UserProgramTasksSection[];
+  hasPrograms: boolean;
+}> => {
+  try {
+    const programs = await getUserPrograms(userId);
+
+    if (programs.length === 0) {
+      const tasks = await getUserTasksForProgram(userId, targetDate, null);
+      return {
+        hasPrograms: false,
+        sections:
+          tasks.length > 0
+            ? [
+                {
+                  program: {
+                    id: "global",
+                    name: "المهام العامة",
+                    created_at: "",
+                  },
+                  weekNumber: null,
+                  hasActiveWeek: true,
+                  tasks,
+                  categories: groupUserTasksByCategory(tasks),
+                },
+              ]
+            : [],
+      };
+    }
+
+    const sections = (
+      await Promise.all(
+        programs.map(async (program) => {
+          const [context, tasks] = await Promise.all([
+            getUserProgramContext(userId, targetDate, program),
+            getUserTasksForProgram(userId, targetDate, program.id),
+          ]);
+
+          return {
+            program,
+            weekNumber: context?.weekNumber ?? null,
+            hasActiveWeek: !!context?.currentProgramWeek,
+            tasks,
+            categories: groupUserTasksByCategory(tasks),
+          };
+        }),
+      )
+    ).filter((section) => section.tasks.length > 0);
+
+    return {
+      hasPrograms: true,
+      sections,
+    };
+  } catch (error) {
+    console.error(error);
+    return { sections: [], hasPrograms: false };
   }
 };
 
@@ -510,6 +630,327 @@ export const clearWeekTaskAssignments = async (
   } catch (error) {
     console.error("Error clearing assignments:", error);
     return false;
+  }
+};
+
+export const getPrograms = async (): Promise<Program[]> => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("programs")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return (data ?? []) as Program[];
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
+export const getProgramById = async (
+  programId: string,
+): Promise<Program | null> => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("programs")
+      .select("*")
+      .eq("id", programId)
+      .single();
+
+    if (error) throw error;
+    return data as Program;
+  } catch {
+    return null;
+  }
+};
+
+export const getProgramMembers = async (
+  programId: string,
+): Promise<(ProgramMember & { user?: User })[]> => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("program_members")
+      .select("*, user:users(*)")
+      .eq("program_id", programId)
+      .order("joined_at", { ascending: true });
+
+    if (error) throw error;
+
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      program_id: row.program_id,
+      user_id: row.user_id,
+      joined_at: row.joined_at,
+      user: row.user as User | undefined,
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
+export const getProgramWeeks = async (
+  programId: string,
+): Promise<(ProgramWeek & { week: Week })[]> => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("program_weeks")
+      .select("*, week:weeks(*)")
+      .eq("program_id", programId);
+
+    if (error) throw error;
+
+    const weeks = (data ?? []).map((row) => ({
+      id: row.id,
+      program_id: row.program_id,
+      week_id: row.week_id,
+      week_number: row.week_number,
+      week: row.week as Week,
+    }));
+
+    return sortProgramWeeksByStartDate(weeks);
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
+export const getUserPrograms = async (userId: string): Promise<Program[]> => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("program_members")
+      .select("program:programs(*), joined_at")
+      .eq("user_id", userId)
+      .order("joined_at", { ascending: true });
+
+    if (error) throw error;
+
+    return (data ?? [])
+      .map((row) => {
+        const program = row.program as unknown;
+        if (!program || Array.isArray(program)) return null;
+        return program as Program;
+      })
+      .filter((program): program is Program => program !== null);
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
+export const getUserProgram = async (
+  userId: string,
+): Promise<Program | null> => {
+  const programs = await getUserPrograms(userId);
+  return programs[0] ?? null;
+};
+
+export const getUserProgramContext = async (
+  userId: string,
+  targetDate: Date = new Date(),
+  program?: Program,
+): Promise<UserProgramContext | null> => {
+  try {
+    const resolvedProgram = program ?? (await getUserProgram(userId));
+    if (!resolvedProgram) return null;
+
+    const week = await getOrCreateWeek(targetDate);
+    if (!week) return null;
+
+    const { data: programWeek, error } = await supabaseAdmin
+      .from("program_weeks")
+      .select("*, week:weeks(*)")
+      .eq("program_id", resolvedProgram.id)
+      .eq("week_id", week.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const allProgramWeeks = await getProgramWeeks(resolvedProgram.id);
+    const weekOrder = programWeek
+      ? getWeekOrderByStartDate(allProgramWeeks, programWeek.week_id)
+      : null;
+
+    return {
+      program: resolvedProgram,
+      currentProgramWeek: programWeek
+        ? {
+            id: programWeek.id,
+            program_id: programWeek.program_id,
+            week_id: programWeek.week_id,
+            week_number: weekOrder ?? programWeek.week_number,
+            week: programWeek.week as Week,
+          }
+        : null,
+      weekNumber: weekOrder,
+    };
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+export const getProgramWeekTasks = async (
+  programId: string,
+  weekId: string,
+): Promise<WeekTask[]> => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("week_tasks")
+      .select("*")
+      .eq("program_id", programId)
+      .eq("week_id", weekId)
+      .order("sort_order", { ascending: true });
+
+    if (error) throw error;
+    return await attachAssignmentMetadata((data ?? []) as WeekTask[]);
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
+export type ProgramDetails = {
+  program: Program;
+  members: (ProgramMember & { user?: User })[];
+  weeks: (ProgramWeek & { week: Week; tasks: WeekTask[] })[];
+};
+
+export const getProgramWithDetails = async (
+  programId: string,
+): Promise<ProgramDetails | null> => {
+  try {
+    const program = await getProgramById(programId);
+    if (!program) return null;
+
+    const [members, weeks] = await Promise.all([
+      getProgramMembers(programId),
+      getProgramWeeks(programId),
+    ]);
+
+    const weekIds = weeks.map((week) => week.week_id);
+    let tasksWithAssignments: WeekTask[] = [];
+
+    if (weekIds.length > 0) {
+      const { data: tasks, error } = await supabaseAdmin
+        .from("week_tasks")
+        .select("*")
+        .eq("program_id", programId)
+        .in("week_id", weekIds)
+        .order("sort_order", { ascending: true });
+
+      if (error) throw error;
+      tasksWithAssignments = await attachAssignmentMetadata(
+        (tasks ?? []) as WeekTask[],
+      );
+    }
+
+    const tasksByWeek = new Map<string, WeekTask[]>();
+    for (const task of tasksWithAssignments) {
+      const list = tasksByWeek.get(task.week_id) ?? [];
+      list.push(task);
+      tasksByWeek.set(task.week_id, list);
+    }
+
+    return {
+      program,
+      members,
+      weeks: weeks.map((programWeek) => ({
+        ...programWeek,
+        tasks: tasksByWeek.get(programWeek.week_id) ?? [],
+      })),
+    };
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+export const getProgramsWithDetails = async (): Promise<ProgramDetails[]> => {
+  try {
+    const programs = await getPrograms();
+    if (programs.length === 0) return [];
+
+    const programIds = programs.map((p) => p.id);
+
+    const [membersResult, weeksResult, tasksResult] = await Promise.all([
+      supabaseAdmin
+        .from("program_members")
+        .select("*, user:users(*)")
+        .in("program_id", programIds),
+      supabaseAdmin
+        .from("program_weeks")
+        .select("*, week:weeks(*)")
+        .in("program_id", programIds),
+      supabaseAdmin
+        .from("week_tasks")
+        .select("*")
+        .in("program_id", programIds)
+        .order("sort_order", { ascending: true }),
+    ]);
+
+    if (membersResult.error) throw membersResult.error;
+    if (weeksResult.error) throw weeksResult.error;
+    if (tasksResult.error) throw tasksResult.error;
+
+    const tasksWithAssignments = await attachAssignmentMetadata(
+      (tasksResult.data ?? []) as WeekTask[],
+    );
+
+    const membersByProgram = new Map<
+      string,
+      (ProgramMember & { user?: User })[]
+    >();
+    for (const row of membersResult.data ?? []) {
+      const list = membersByProgram.get(row.program_id) ?? [];
+      list.push({
+        id: row.id,
+        program_id: row.program_id,
+        user_id: row.user_id,
+        joined_at: row.joined_at,
+        user: row.user as User | undefined,
+      });
+      membersByProgram.set(row.program_id, list);
+    }
+
+    const tasksByProgramWeek = new Map<string, WeekTask[]>();
+    for (const task of tasksWithAssignments) {
+      if (!task.program_id) continue;
+      const key = `${task.program_id}:${task.week_id}`;
+      const list = tasksByProgramWeek.get(key) ?? [];
+      list.push(task);
+      tasksByProgramWeek.set(key, list);
+    }
+
+    const weeksByProgram = new Map<
+      string,
+      (ProgramWeek & { week: Week; tasks: WeekTask[] })[]
+    >();
+    for (const row of weeksResult.data ?? []) {
+      const list = weeksByProgram.get(row.program_id) ?? [];
+      const key = `${row.program_id}:${row.week_id}`;
+      list.push({
+        id: row.id,
+        program_id: row.program_id,
+        week_id: row.week_id,
+        week_number: row.week_number,
+        week: row.week as Week,
+        tasks: tasksByProgramWeek.get(key) ?? [],
+      });
+      weeksByProgram.set(row.program_id, list);
+    }
+
+    return programs.map((program) => ({
+      program,
+      members: membersByProgram.get(program.id) ?? [],
+      weeks: sortProgramWeeksByStartDate(
+        weeksByProgram.get(program.id) ?? [],
+      ),
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
   }
 };
 

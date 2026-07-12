@@ -231,3 +231,90 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_meeting_attendance_unique_guest_per_day
   WHERE guest_name IS NOT NULL;
 
 ALTER TABLE meeting_attendance ENABLE ROW LEVEL SECURITY;
+
+
+-- ============================================
+--    PROGRAMS
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS programs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_programs_name ON programs(name);
+
+ALTER TABLE programs ENABLE ROW LEVEL SECURITY;
+
+
+-- ============================================
+--    PROGRAM_MEMBERS
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS program_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT unique_program_member UNIQUE(program_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_program_members_program_id ON program_members(program_id);
+CREATE INDEX IF NOT EXISTS idx_program_members_user_id ON program_members(user_id);
+
+ALTER TABLE program_members ENABLE ROW LEVEL SECURITY;
+
+
+-- ============================================
+--    PROGRAM_WEEKS
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS program_weeks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+  week_id UUID NOT NULL REFERENCES weeks(id) ON DELETE CASCADE,
+  week_number INTEGER NOT NULL CHECK (week_number > 0),
+  CONSTRAINT unique_program_week UNIQUE(program_id, week_id),
+  CONSTRAINT unique_program_week_number UNIQUE(program_id, week_number)
+);
+
+CREATE INDEX IF NOT EXISTS idx_program_weeks_program_id ON program_weeks(program_id);
+CREATE INDEX IF NOT EXISTS idx_program_weeks_week_id ON program_weeks(week_id);
+
+ALTER TABLE program_weeks ENABLE ROW LEVEL SECURITY;
+
+
+-- ============================================
+--    WEEK_TASKS (program scope)
+-- ============================================
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'week_tasks' AND column_name = 'program_id'
+  ) THEN
+    ALTER TABLE week_tasks
+      ADD COLUMN program_id UUID REFERENCES programs(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_week_tasks_program_id ON week_tasks(program_id);
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'unique_week_task'
+  ) THEN
+    ALTER TABLE week_tasks DROP CONSTRAINT unique_week_task;
+  END IF;
+END $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS unique_week_task_global
+  ON week_tasks(week_id, task_id)
+  WHERE program_id IS NULL AND task_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS unique_week_task_program
+  ON week_tasks(week_id, task_id, program_id)
+  WHERE program_id IS NOT NULL AND task_id IS NOT NULL;

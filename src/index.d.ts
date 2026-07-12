@@ -68,6 +68,7 @@ declare global {
     category_id: nullable<string>;
     category_name: nullable<string>;
     sort_order: number;
+    program_id?: nullable<string>;
     is_assigned_only?: boolean;
     assigned_user_ids?: string[];
   }
@@ -109,6 +110,48 @@ declare global {
       completions: number;
       targetCount: number;
     }>;
+  }
+
+  interface Program {
+    id: string;
+    name: string;
+    created_at: string;
+  }
+
+  interface ProgramMember {
+    id: string;
+    program_id: string;
+    user_id: string;
+    joined_at: string;
+  }
+
+  interface ProgramWeek {
+    id: string;
+    program_id: string;
+    week_id: string;
+    week_number: number;
+    week?: Week;
+  }
+
+  interface UserProgramContext {
+    program: Program;
+    currentProgramWeek: ProgramWeek | null;
+    weekNumber: number | null;
+  }
+
+  interface UserTaskCategoryGroup {
+    name: string;
+    completed: number;
+    total: number;
+    tasks: UserTask[];
+  }
+
+  interface UserProgramTasksSection {
+    program: Program;
+    weekNumber: number | null;
+    hasActiveWeek: boolean;
+    categories: UserTaskCategoryGroup[];
+    tasks: UserTask[];
   }
 }
 

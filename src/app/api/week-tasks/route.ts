@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
     category_name,
     task_days,
     sort_order,
+    program_id,
   } = body;
 
   if (!week_id || !task_name) {
@@ -120,6 +121,7 @@ export async function POST(request: NextRequest) {
       .from("week_tasks")
       .insert({
         week_id,
+        program_id: program_id || null,
         task_id: task_id || null,
         task_name,
         category_id: category_id || null,

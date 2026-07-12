@@ -7,11 +7,16 @@ import {
   IconProps,
   NotepadIcon,
   UserCheckIcon,
+  UsersThreeIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAVIGATION_ITEMS = [
+  {
+    href: "/panel/programs",
+    icon: (props: IconProps) => <UsersThreeIcon {...props} />,
+  },
   {
     href: "/panel/weeks",
     icon: (props: IconProps) => <CalendarBlankIcon {...props} />,
@@ -39,19 +44,25 @@ export function PanelNavigation() {
 
   return (
     <div className="fixed bottom-4 left-1/2 flex -translate-x-1/2 gap-2 rounded-full bg-white p-2 shadow-lg">
-      {NAVIGATION_ITEMS.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={`flex flex-col items-center rounded-full border p-2 text-xs ${pathname === item.href ? "border-primary-500 text-primary-500" : "border-gray-200 text-gray-500"}`}
-        >
-          {item.icon({
-            size: 20,
-            fill: "currentColor",
-            weight: pathname === item.href ? "fill" : "regular",
-          })}
-        </Link>
-      ))}
+      {NAVIGATION_ITEMS.map((item) => {
+        const isActive =
+          pathname === item.href ||
+          (item.href !== "/panel" && pathname.startsWith(`${item.href}/`));
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex flex-col items-center rounded-full border p-2 text-xs ${isActive ? "border-primary-500 text-primary-500" : "border-gray-200 text-gray-500"}`}
+          >
+            {item.icon({
+              size: 20,
+              fill: "currentColor",
+              weight: isActive ? "fill" : "regular",
+            })}
+          </Link>
+        );
+      })}
     </div>
   );
 }

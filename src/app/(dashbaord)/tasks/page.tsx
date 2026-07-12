@@ -1,4 +1,4 @@
-import { getUserTasks } from "@/actions";
+import { getUserProgramTasksSections } from "@/actions";
 import ShowCategoriesWithTasks from "@/components/show-categorieswithtasks";
 import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
@@ -59,35 +59,30 @@ export default async function Page({
   const isPastSelectedDate = diffInDays > 1;
   const canEditSelectedDate = diffInDays === 0 || diffInDays === 1;
 
-  const tasks = await getUserTasks(user.id, selectedDate);
+  const { sections, hasPrograms } = await getUserProgramTasksSections(
+    user.id,
+    selectedDate,
+  );
 
-  const categories = Object.entries(
-    tasks.reduce((groups: Record<string, typeof tasks>, task) => {
-      const category = task.category_name || "";
-      if (!groups[category]) {
-        groups[category] = [];
-      }
-      groups[category].push(task);
-      return groups;
-    }, {}),
-  )
-    .sort(([keyA], [keyB]) => {
-      if (keyA === "") return 1;
-      if (keyB === "") return -1;
-      return 0;
-    })
-    .map(([name, tasks]) => ({
-      name,
-      completed: tasks.filter((task) => task.completed_at !== null && task.completed_at !== "").length,
-      total: tasks.length,
-      tasks: tasks,
-    }));
+  const tasks = sections.flatMap((section) => section.tasks);
+
+  const programSections = hasPrograms
+    ? sections.map((section) => ({
+        programId: section.program.id,
+        programName: section.program.name,
+        weekNumber: section.weekNumber,
+        hasActiveWeek: section.hasActiveWeek,
+        categories: section.categories,
+      }))
+    : undefined;
+
+  const categories = !hasPrograms ? sections[0]?.categories : undefined;
 
   return (
     <div className="flex w-full flex-1 flex-col gap-8">
       <div className="fixed top-16 left-0 z-30 w-full overflow-x-auto bg-white/95 py-4 shadow-2xs md:py-6">
         <div className="mx-auto flex min-w-max items-center justify-center gap-2 px-3">
-          {daysToShow.map((day, id) => (
+          {daysToShow.map((day, id) =>
             day.isFuture ? (
               <div
                 key={id}
@@ -124,18 +119,22 @@ export default async function Page({
                   {day.date}
                 </span>
               </Link>
-            )
-          ))}
+            ),
+          )}
         </div>
       </div>
 
-      <ShowCategoriesWithTasks
-        categories={categories}
-        tasks={tasks}
-        selectedDateKey={selectedDateKey}
-        canEditSelectedDate={canEditSelectedDate}
-        isPastSelectedDate={isPastSelectedDate}
-      />
+      <div className="mt-24">
+        <ShowCategoriesWithTasks
+          categories={categories}
+          programSections={programSections}
+          tasks={tasks}
+          selectedDateKey={selectedDateKey}
+          canEditSelectedDate={canEditSelectedDate}
+          isPastSelectedDate={isPastSelectedDate}
+          hasProgramBanner={!!programSections?.length}
+        />
+      </div>
     </div>
   );
 }
