@@ -1,9 +1,14 @@
 import env from "@/env";
+import { DISCORD_AUTH_ENABLED } from "@/consts";
 import { generateState } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET() {
+  if (!DISCORD_AUTH_ENABLED) {
+    return NextResponse.redirect(new URL("/login", env.APP_URL));
+  }
+
   const state = generateState();
   const cookieStore = await cookies();
   cookieStore.set("discord_oauth_state", state, {

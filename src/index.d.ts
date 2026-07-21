@@ -27,18 +27,35 @@ declare global {
     created_at: string;
   }
 
+  type ConnectionType = "discord" | "telegram";
+
+  interface Connection {
+    id: string;
+    user_id: string;
+    name: string;
+    username: string;
+    avatar: nullable<string>;
+    type: ConnectionType;
+    authorized_at: string;
+    accessed_at: string;
+  }
+
   interface User {
     id: string;
+    name: nullable<string>;
+    phone: nullable<string>;
+    email: nullable<string>;
+    role: Role;
+    created_at: string;
+    updated_at: string;
+    connections?: Connection[];
+    // Derived from primary connection / aliases for existing UI
     username: string;
     provider_id: string;
-    role: Role;
     friend_id: nullable<string>;
-    email: nullable<string>;
     full_name: nullable<string>;
     phone_number: nullable<string>;
     avatar_url: nullable<string>;
-    created_at: string;
-    updated_at: string;
   }
 
   interface Category {

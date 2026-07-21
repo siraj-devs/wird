@@ -1,4 +1,5 @@
-import { supabaseAdmin } from "./lib/supabase";
+import { mapAuthUser } from "./lib/auth-db";
+import { supabaseAdmin, supabaseAuth } from "./lib/supabase";
 import {
   getWeekOrderByStartDate,
   sortProgramWeeksByStartDate,
@@ -6,13 +7,13 @@ import {
 
 export const getUser = async (id: string) => {
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabaseAuth
       .from("users")
-      .select("*")
+      .select("*, connections(*)")
       .eq("id", id)
       .single();
     if (error) throw error;
-    return data as User;
+    return mapAuthUser(data);
   } catch {
     return null;
   }
@@ -555,11 +556,25 @@ export const getAllWeeksWithTasks = async (): Promise<
 
 export const getUsers = async () => {
   try {
-    const { data: users, error } = await supabaseAdmin
+    const { data: users, error } = await supabaseAuth
       .from("users")
-      .select("*");
+      .select("*, connections(*)")
+      .order("created_at", { ascending: false });
     if (error) throw error;
-    return users as User[];
+    return (users ?? []).map(mapAuthUser);
+  } catch {
+    return [];
+  }
+};
+
+export const getConnections = async (): Promise<Connection[]> => {
+  try {
+    const { data, error } = await supabaseAuth
+      .from("connections")
+      .select("*")
+      .order("accessed_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as Connection[];
   } catch {
     return [];
   }

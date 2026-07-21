@@ -1,3 +1,4 @@
+import { getAuthUserFromSession } from "@/lib/auth-db";
 import { supabaseAdmin } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -12,26 +13,12 @@ export async function PUT(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Verify user session
-  const { data: session } = await supabaseAdmin
-    .from("sessions")
-    .select("user_id")
-    .eq("token", token)
-    .gte("expires_at", new Date().toISOString())
-    .single();
-
-  if (!session) {
+  const authUser = await getAuthUserFromSession(token);
+  if (!authUser) {
     return NextResponse.json({ error: "Invalid session" }, { status: 401 });
   }
 
-  // Get user role
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("role")
-    .eq("id", session.user_id)
-    .single();
-
-  if (!user || !["owner"].includes(user.role)) {
+  if (!["owner"].includes(authUser.role)) {
     return NextResponse.json(
       { error: "Forbidden - Owner role required" },
       { status: 403 },
@@ -75,26 +62,12 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Verify user session
-  const { data: session } = await supabaseAdmin
-    .from("sessions")
-    .select("user_id")
-    .eq("token", token)
-    .gte("expires_at", new Date().toISOString())
-    .single();
-
-  if (!session) {
+  const authUser = await getAuthUserFromSession(token);
+  if (!authUser) {
     return NextResponse.json({ error: "Invalid session" }, { status: 401 });
   }
 
-  // Get user role
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("role")
-    .eq("id", session.user_id)
-    .single();
-
-  if (!user || !["owner"].includes(user.role)) {
+  if (!["owner"].includes(authUser.role)) {
     return NextResponse.json(
       { error: "Forbidden - Owner role required" },
       { status: 403 },

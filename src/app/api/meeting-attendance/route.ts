@@ -1,5 +1,6 @@
 import { APIError } from "@/lib/api";
 import { verifyToken } from "@/lib/auth";
+import { getAuthUserRole } from "@/lib/auth-db";
 import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
@@ -21,17 +22,12 @@ const requireAuthorizedUser = async (request: NextRequest) => {
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized - Invalid token");
 
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("id, role")
-    .eq("id", payload.userId)
-    .single();
-
-  if (!user || !ALLOWED_ROLES.includes((user.role as Role))) {
+  const role = await getAuthUserRole(payload.userId);
+  if (!role || !ALLOWED_ROLES.includes(role)) {
     throw new APIError(403, "Forbidden - Admin or owner role required");
   }
 
-  return user;
+  return { id: payload.userId, role };
 };
 
 export async function GET(request: NextRequest) {

@@ -9,6 +9,7 @@ export default function OnboardingForm() {
 
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -22,6 +23,9 @@ export default function OnboardingForm() {
     const arabicRegex = /[\u0600-\u06FF]/;
     return arabicRegex.test(text) && text.trim().length > 0;
   };
+
+  const validateEmail = (value: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -37,6 +41,11 @@ export default function OnboardingForm() {
       return;
     }
 
+    if (!validateEmail(email)) {
+      setFormError("الرجاء إدخال بريد إلكتروني صحيح");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -48,6 +57,7 @@ export default function OnboardingForm() {
         body: JSON.stringify({
           fullName: fullName.trim(),
           phoneNumber: "+212" + phoneNumber.replace(/\s/g, ""),
+          email: email.trim(),
         }),
       });
 
@@ -98,6 +108,21 @@ export default function OnboardingForm() {
             }}
             className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:outline-none"
             placeholder="مثال: محمد بن أحمد"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-700">
+            البريد الإلكتروني <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            required
+            dir="ltr"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-left focus:ring-2 focus:ring-primary-500 focus:outline-none"
+            placeholder="name@example.com"
           />
         </div>
 

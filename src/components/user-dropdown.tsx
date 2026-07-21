@@ -89,6 +89,13 @@ export default function UserDropdown({
             </div>
 
             <nav className="flex flex-col text-sm text-gray-700 *:px-3 *:py-2 *:text-right *:hover:bg-gray-50">
+              <button
+                type="button"
+                onClick={() => navigateTo("/profile")}
+                className="cursor-pointer text-right"
+              >
+                الملف الشخصي
+              </button>
               {hasRole(user, ["owner", "admin", "member"]) && (
                 <>
                   <button

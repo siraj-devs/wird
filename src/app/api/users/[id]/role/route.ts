@@ -1,6 +1,7 @@
 import { verifyToken } from "@/lib/auth";
+import { getAuthUserRole } from "@/lib/auth-db";
 import { ROLES } from "@/lib/roles";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAuth } from "@/lib/supabase";
 import { APIError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -17,19 +18,13 @@ export async function PUT(
     const payload = verifyToken(token);
     if (!payload) throw new APIError(401, "Unauthorized");
 
-    const { data: user } = await supabaseAdmin
-      .from("users")
-      .select("role")
-      .eq("id", payload.userId)
-      .single();
-
-    if (!user || ![ROLES.OWNER].includes(user.role as Role))
-      throw new APIError(403, "Forbidden");
+    const role = await getAuthUserRole(payload.userId);
+    if (!role || role !== ROLES.OWNER) throw new APIError(403, "Forbidden");
 
     const body = await request.json();
-    const { role } = body as { role: Role };
+    const { role: nextRole } = body as { role: Role };
 
-    if (!role || !Object.values(ROLES).includes(role))
+    if (!nextRole || !Object.values(ROLES).includes(nextRole))
       throw new APIError(
         400,
         `Invalid role. Must be one of: ${Object.values(ROLES).join(", ")}`,
@@ -38,11 +33,11 @@ export async function PUT(
     if (id === payload.userId)
       throw new APIError(400, "Cannot change your own role");
 
-    const { data: updatedUser, error } = await supabaseAdmin
+    const { data: updatedUser, error } = await supabaseAuth
       .from("users")
-      .update({ role })
+      .update({ role: nextRole, updated_at: new Date().toISOString() })
       .eq("id", id)
-      .select("id, username, email, role, avatar_url")
+      .select("id, name, email, phone, role")
       .single();
 
     if (error) throw new APIError(500, "Database error: " + error.message);
@@ -50,6 +45,12 @@ export async function PUT(
     return NextResponse.json({ user: updatedUser });
   } catch (error) {
     console.error("Error updating user profile:", error);
+    if (error instanceof APIError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

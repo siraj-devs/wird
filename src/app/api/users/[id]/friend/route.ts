@@ -1,4 +1,5 @@
 import { verifyToken } from "@/lib/auth";
+import { getAuthUserRole } from "@/lib/auth-db";
 import { APIError } from "@/lib/api";
 import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -11,13 +12,8 @@ async function getOwner(request: NextRequest): Promise<JWTPayload> {
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized");
 
-  const { data: actor } = await supabaseAdmin
-    .from("users")
-    .select("role")
-    .eq("id", payload.userId)
-    .single();
-
-  if (!actor || ![ROLES.OWNER].includes(actor.role as Role)) {
+  const role = await getAuthUserRole(payload.userId);
+  if (!role || ![ROLES.OWNER].includes(role)) {
     throw new APIError(403, "Forbidden");
   }
 

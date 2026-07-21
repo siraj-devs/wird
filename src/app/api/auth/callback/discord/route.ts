@@ -1,12 +1,17 @@
 import env from "@/env";
+import { DISCORD_AUTH_ENABLED } from "@/consts";
 import { generateToken } from "@/lib/auth";
+import { createAuthSession, upsertConnectionUser } from "@/lib/auth-db";
 import { setAuthCookie } from "@/lib/auth-server";
-import { supabaseAdmin } from "@/lib/supabase";
 import { fetchWithTimeout } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
+  if (!DISCORD_AUTH_ENABLED) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const state = searchParams.get("state");
@@ -59,59 +64,24 @@ export async function GET(request: NextRequest) {
     if (!userResponse.ok) throw new Error("Failed to fetch user info");
 
     const discordUser: DiscordUser = await userResponse.json();
+    const avatarUrl = discordUser.avatar
+      ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
+      : null;
 
-    const { data: existingUser } = await supabaseAdmin
-      .from("users")
-      .select("*")
-      .eq("provider_id", discordUser.id)
-      .single();
-
-    let userId: string;
-
-    if (existingUser) {
-      userId = existingUser.id;
-      await supabaseAdmin
-        .from("users")
-        .update({
-          username: discordUser.username,
-          avatar_url: discordUser.avatar
-            ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
-            : null,
-          email: discordUser.email,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", userId);
-    } else {
-      const { data: newUser, error } = await supabaseAdmin
-        .from("users")
-        .insert({
-          username: discordUser.username,
-          email: discordUser.email,
-          avatar_url: discordUser.avatar
-            ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
-            : null,
-          provider_id: discordUser.id,
-        })
-        .select()
-        .single();
-
-      if (error || !newUser) {
-        console.error("Error creating user:", error);
-        throw new Error("Failed to create user");
-      }
-
-      userId = newUser.id;
-    }
+    const userId = await upsertConnectionUser({
+      id: discordUser.id,
+      type: "discord",
+      name: discordUser.username,
+      username: discordUser.username,
+      avatar: avatarUrl,
+      email: discordUser.email ?? null,
+    });
 
     const token = generateToken({
       userId: userId,
     });
     await setAuthCookie(token);
-    await supabaseAdmin.from("sessions").insert({
-      user_id: userId,
-      token: token,
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    });
+    await createAuthSession(userId, token);
 
     try {
       await fetchWithTimeout(

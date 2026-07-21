@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { verifyToken } from "./auth";
+import { getUser } from "@/actions";
 import { ROLES } from "./roles";
-import { supabaseAdmin } from "./supabase";
 
 export class APIError extends Error {
   status: number;
@@ -21,16 +21,12 @@ export async function checkAuth(
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized - Invalid token");
 
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("role")
-    .eq("id", payload.userId)
-    .single();
+  const user = await getUser(payload.userId);
 
-  roles = roles ?? Object.values(ROLES);
+  const allowedRoles = roles.length > 0 ? roles : Object.values(ROLES);
 
-  if (!user || !roles.includes(user.role as role))
+  if (!user || !allowedRoles.includes(user.role as role))
     throw new APIError(403, "Forbidden - Role required");
 
-  return user as User;
+  return user;
 }

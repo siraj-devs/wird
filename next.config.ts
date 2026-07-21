@@ -9,7 +9,21 @@ const nextConfig: NextConfig = {
     "192.168.222.125",
   ],
   images: {
-    remotePatterns: [new URL("https://cdn.discordapp.com/avatars/**")],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.discordapp.com",
+        pathname: "/avatars/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.telesco.pe",
+      },
+      {
+        protocol: "https",
+        hostname: "*.telegram-cdn.org",
+      },
+    ],
     dangerouslyAllowLocalIP: true,
   },
 };

@@ -1,4 +1,5 @@
 import { verifyToken } from "@/lib/auth";
+import { getAuthUserRole } from "@/lib/auth-db";
 import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 import { APIError } from "@/lib/api";
@@ -12,15 +13,10 @@ export async function GET(request: NextRequest) {
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized - Invalid token");
 
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("role")
-    .eq("id", payload.userId)
-    .single();
-
+  const role = await getAuthUserRole(payload.userId);
   if (
-    !user ||
-    ![ROLES.MEMBER, ROLES.ADMIN, ROLES.OWNER].includes(user.role as Role)
+    !role ||
+    ![ROLES.MEMBER, ROLES.ADMIN, ROLES.OWNER].includes(role)
   )
     throw new APIError(403, "Forbidden - Member role required");
 
@@ -91,13 +87,8 @@ export async function POST(request: NextRequest) {
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized - Invalid token");
 
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("role")
-    .eq("id", payload.userId)
-    .single();
-
-  if (!user || ![ROLES.OWNER].includes(user.role as Role))
+  const role = await getAuthUserRole(payload.userId);
+  if (!role || ![ROLES.OWNER].includes(role))
     throw new APIError(403, "Forbidden - Owner role required");
 
   const body = await request.json();
@@ -157,13 +148,8 @@ export async function DELETE(request: NextRequest) {
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized - Invalid token");
 
-  const { data: user } = await supabaseAdmin
-    .from("users")
-    .select("role")
-    .eq("id", payload.userId)
-    .single();
-
-  if (!user || ![ROLES.OWNER].includes(user.role as Role))
+  const role = await getAuthUserRole(payload.userId);
+  if (!role || ![ROLES.OWNER].includes(role))
     throw new APIError(403, "Forbidden - Owner role required");
 
   const searchParams = request.nextUrl.searchParams;

@@ -1,7 +1,7 @@
 import env from "@/env";
 import { generateToken } from "@/lib/auth";
+import { createAuthSession, upsertConnectionUser } from "@/lib/auth-db";
 import { setAuthCookie } from "@/lib/auth-server";
-import { supabaseAdmin } from "@/lib/supabase";
 import { fetchWithTimeout } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -185,59 +185,21 @@ export async function GET(request: NextRequest) {
     // Verify and decode the id_token
     const telegramUser = await verifyTelegramIdToken(idToken);
 
-    const providerId = `telegram:${telegramUser.sub}`;
     const username =
       telegramUser.preferred_username ??
       telegramUser.name.toLowerCase().replace(/\s+/g, "_");
-    // const fullName = telegramUser.name;
-    const avatarUrl = telegramUser.picture ?? null;
 
-    const { data: existingUser } = await supabaseAdmin
-      .from("users")
-      .select("*")
-      .eq("provider_id", providerId)
-      .single();
-
-    let userId: string;
-
-    if (existingUser) {
-      userId = existingUser.id;
-      await supabaseAdmin
-        .from("users")
-        .update({
-          username,
-          // full_name: fullName,
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", userId);
-    } else {
-      const { data: newUser, error } = await supabaseAdmin
-        .from("users")
-        .insert({
-          username,
-          // full_name: fullName,
-          avatar_url: avatarUrl,
-          provider_id: providerId,
-        })
-        .select()
-        .single();
-
-      if (error || !newUser) {
-        console.error("Error creating Telegram user:", error);
-        throw new Error("Failed to create user");
-      }
-
-      userId = newUser.id;
-    }
+    const userId = await upsertConnectionUser({
+      id: String(telegramUser.sub),
+      type: "telegram",
+      name: telegramUser.name,
+      username,
+      avatar: telegramUser.picture ?? null,
+    });
 
     const token = generateToken({ userId });
     await setAuthCookie(token);
-    await supabaseAdmin.from("sessions").insert({
-      user_id: userId,
-      token,
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    });
+    await createAuthSession(userId, token);
 
     return NextResponse.redirect(new URL("/", request.url));
   } catch (error) {

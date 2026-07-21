@@ -7,6 +7,10 @@ const env = createEnv({
 
     SUPABASE_SERVICE_SECRET_KEY: z.string().min(1),
 
+    // Dedicated auth database (users, connections, sessions)
+    AUTH_SUPABASE_URL: z.url(),
+    AUTH_SUPABASE_SERVICE_SECRET_KEY: z.string().min(1),
+
     DISCORD_CLIENT_ID: z.string().min(1),
     DISCORD_CLIENT_SECRET: z.string().min(1),
     DISCORD_REDIRECT_URI: z.url(),

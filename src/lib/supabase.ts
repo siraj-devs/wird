@@ -19,3 +19,15 @@ export const supabaseAdmin = createClient(
     },
   },
 );
+
+// Auth database — users, connections, sessions (db/new.schema.sql)
+export const supabaseAuth = createClient(
+  env.AUTH_SUPABASE_URL,
+  env.AUTH_SUPABASE_SERVICE_SECRET_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  },
+);

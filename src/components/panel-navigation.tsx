@@ -7,6 +7,7 @@ import {
   IconProps,
   NotepadIcon,
   UserCheckIcon,
+  UsersIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -28,6 +29,10 @@ const NAVIGATION_ITEMS = [
   {
     href: "/panel",
     icon: (props: IconProps) => <HouseIcon {...props} />,
+  },
+  {
+    href: "/panel/users",
+    icon: (props: IconProps) => <UsersIcon {...props} />,
   },
   {
     href: "/panel/meeting-attendance",
