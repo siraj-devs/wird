@@ -171,8 +171,6 @@ export default function MeetingAttendanceForm({
           })),
       ];
 
-      console.log("Saving attendees:", attendees);
-
       const response = await fetch("/api/meeting-attendance", {
         method: "PUT",
         headers: {

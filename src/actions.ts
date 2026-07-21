@@ -557,8 +557,7 @@ export const getUsers = async () => {
   try {
     const { data: users, error } = await supabaseAdmin
       .from("users")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .select("*");
     if (error) throw error;
     return users as User[];
   } catch {

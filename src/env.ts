@@ -13,6 +13,10 @@ const env = createEnv({
     DISCORD_GUILD_ID: z.string().min(1),
     DISCORD_BOT_TOKEN: z.string().min(1),
 
+    TELEGRAM_CLIENT_ID: z.string().min(1),
+    TELEGRAM_CLIENT_SECRET: z.string().min(1),
+    TELEGRAM_REDIRECT_URI: z.url(),
+
     JWT_SECRET: z.string().min(1),
 
     NODE_ENV: z.enum(["development", "test", "production"]),
