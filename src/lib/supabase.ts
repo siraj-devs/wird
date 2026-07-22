@@ -20,10 +20,10 @@ export const supabaseAdmin = createClient(
   },
 );
 
-// Auth database — users, connections, sessions (db/new.schema.sql)
-export const supabaseAuth = createClient(
-  env.AUTH_SUPABASE_URL,
-  env.AUTH_SUPABASE_SERVICE_SECRET_KEY,
+// New database — users, connections, sessions, programs (db/new.schema.sql + db/programs.sql)
+export const supabaseNew = createClient(
+  env.NEW_SUPABASE_URL,
+  env.NEW_SUPABASE_SERVICE_SECRET_KEY,
   {
     auth: {
       autoRefreshToken: false,

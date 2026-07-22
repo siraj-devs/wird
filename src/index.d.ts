@@ -134,6 +134,28 @@ declare global {
   interface Program {
     id: string;
     name: string;
+    description: nullable<string>;
+    created_at: string;
+  }
+
+  interface ProgramCategory {
+    id: string;
+    program_id: string;
+    name: string;
+    sort_order: number;
+    created_at: string;
+  }
+
+  interface ProgramTask {
+    id: string;
+    program_id: string;
+    category_id: nullable<string>;
+    name: string;
+    schedule_type: "recurring" | "dated";
+    days: nullable<number[]>;
+    start_date: nullable<string>;
+    end_date: nullable<string>;
+    sort_order: number;
     created_at: string;
   }
 
@@ -142,6 +164,22 @@ declare global {
     program_id: string;
     user_id: string;
     joined_at: string;
+  }
+
+  interface ProgramFriend {
+    id: string;
+    program_id: string;
+    user_a_id: string;
+    user_b_id: string;
+    created_at: string;
+  }
+
+  interface ProgramTaskCompletion {
+    id: string;
+    program_task_id: string;
+    user_id: string;
+    completed_on: string;
+    completed_at: string;
   }
 
   interface ProgramWeek {
@@ -165,12 +203,56 @@ declare global {
     tasks: UserTask[];
   }
 
+  interface UserProgramFriendProgress {
+    user_id: string;
+    name: string;
+    completed: number;
+    total: number;
+  }
+
   interface UserProgramTasksSection {
     program: Program;
     weekNumber: number | null;
     hasActiveWeek: boolean;
     categories: UserTaskCategoryGroup[];
     tasks: UserTask[];
+    friendProgress?: UserProgramFriendProgress[];
+  }
+
+  type ProgramProgressView = "week" | "month";
+
+  interface ProgramProgressRange {
+    view: ProgramProgressView;
+    startDate: string;
+    endDate: string;
+    dateKeys: string[];
+    label: string;
+    prevFrom: string;
+    nextFrom: string;
+  }
+
+  interface ProgramTaskProgressRow {
+    task: ProgramTask & { category?: ProgramCategory };
+    assignedKeys: string[];
+    completedKeys: string[];
+    assignedCount: number;
+    completedCount: number;
+  }
+
+  interface ProgramDailyProgress {
+    dateKey: string;
+    completed: number;
+    total: number;
+  }
+
+  interface ProgramProgressSection {
+    program: Program;
+    tasks: ProgramTaskProgressRow[];
+    completed: number;
+    total: number;
+    percent: number;
+    daily: ProgramDailyProgress[];
+    friendProgress: UserProgramFriendProgress[];
   }
 }
 

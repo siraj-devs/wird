@@ -1,9 +1,4 @@
-import {
-  getCategories,
-  getProgramWithDetails,
-  getTasks,
-  getUsers,
-} from "@/actions";
+import { getProgramWithDetails, getUsers } from "@/actions";
 import ManageProgramDetail from "@/components/manage-program-detail";
 import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
@@ -17,10 +12,8 @@ export default async function Page({
   await checkRole([ROLES.OWNER, ROLES.ADMIN]);
   const { id } = await params;
 
-  const [programDetails, tasks, categories, users] = await Promise.all([
+  const [programDetails, users] = await Promise.all([
     getProgramWithDetails(id),
-    getTasks(),
-    getCategories(),
     getUsers(),
   ]);
 
@@ -28,12 +21,7 @@ export default async function Page({
 
   return (
     <div className="ds-page">
-      <ManageProgramDetail
-        programDetails={programDetails}
-        tasks={tasks}
-        categories={categories}
-        users={users}
-      />
+      <ManageProgramDetail programDetails={programDetails} users={users} />
     </div>
   );
 }

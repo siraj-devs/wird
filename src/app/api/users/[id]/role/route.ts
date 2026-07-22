@@ -1,7 +1,7 @@
 import { verifyToken } from "@/lib/auth";
 import { getAuthUserRole } from "@/lib/auth-db";
 import { ROLES } from "@/lib/roles";
-import { supabaseAuth } from "@/lib/supabase";
+import { supabaseNew } from "@/lib/supabase";
 import { APIError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -33,7 +33,7 @@ export async function PUT(
     if (id === payload.userId)
       throw new APIError(400, "Cannot change your own role");
 
-    const { data: updatedUser, error } = await supabaseAuth
+    const { data: updatedUser, error } = await supabaseNew
       .from("users")
       .update({ role: nextRole, updated_at: new Date().toISOString() })
       .eq("id", id)

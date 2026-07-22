@@ -17,6 +17,7 @@ type ProgramSection = {
   weekNumber: number | null;
   hasActiveWeek: boolean;
   categories: CategoryGroup[];
+  friendProgress?: UserProgramFriendProgress[];
 };
 
 export default function ShowCategoriesWithTasks({
@@ -83,13 +84,13 @@ export default function ShowCategoriesWithTasks({
     try {
       const completedTasks = Array.from(checkedTasks.entries())
         .filter(([, isChecked]) => isChecked)
-        .map(([weekTaskId]) => {
+        .map(([programTaskId]) => {
           return {
-            week_task_id: weekTaskId,
+            program_task_id: programTaskId,
           };
         });
 
-      const response = await fetch("/api/user-tasks", {
+      const response = await fetch("/api/program-task-completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -226,12 +227,23 @@ export default function ShowCategoriesWithTasks({
                 <div className="rounded-xl border border-primary-200 bg-linear-to-l from-primary-50 to-white px-4 py-4 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="mt-0.5 text-xs text-primary-700">
-                        الأسبوع {section.weekNumber} 
-                      </p>
                       <h2 className="text-base font-semibold text-primary-900">
                         {section.programName}
                       </h2>
+                      {section.weekNumber != null && (
+                        <p className="mt-0.5 text-xs text-primary-700">
+                          الأسبوع {section.weekNumber}
+                        </p>
+                      )}
+                      {section.friendProgress &&
+                        section.friendProgress.length > 0 && (
+                          <p className="mt-1 text-xs text-primary-600">
+                            تقدم الأصدقاء:{" "}
+                            {section.friendProgress
+                              .map((f) => `${f.name} ${f.completed}/${f.total}`)
+                              .join(" · ")}
+                          </p>
+                        )}
                     </div>
                     {sectionTotal > 0 && (
                       <span

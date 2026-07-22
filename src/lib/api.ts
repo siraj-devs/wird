@@ -3,7 +3,7 @@ import { getUser } from "@/actions";
 import { getAuthUserRole, mapPendingConnection } from "./auth-db";
 import { verifyToken } from "./auth";
 import { ROLES } from "./roles";
-import { supabaseAuth } from "./supabase";
+import { supabaseNew } from "./supabase";
 
 export class APIError extends Error {
   status: number;
@@ -29,7 +29,7 @@ export async function checkAuth(
   if (payload.userId) {
     user = await getUser(payload.userId);
   } else {
-    const { data: connection } = await supabaseAuth
+    const { data: connection } = await supabaseNew
       .from("connections")
       .select("*")
       .eq("id", payload.connectionId)

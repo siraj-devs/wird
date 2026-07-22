@@ -106,6 +106,13 @@ export default function UserDropdown({
                   >
                     متابعة مهامي
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo("/progress")}
+                    className="cursor-pointer text-right"
+                  >
+                    تقدمي في البرامج
+                  </button>
                   {FEEDBACK_ENABLED && (
                     <button
                       type="button"

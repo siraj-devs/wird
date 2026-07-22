@@ -1,29 +1,17 @@
 "use client";
 
-import type { ProgramDetails } from "@/actions";
-import { ALL_DAYS } from "@/lib";
-import { sortProgramWeeksByStartDate } from "@/lib/program-weeks";
+import type { ProgramDetails } from "@/lib/programs";
 import { getRoleLabel, ROLES } from "@/lib/roles";
 import { PlusIcon, TrashIcon, XIcon } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import AddProgramCategoryForm from "./add-program-category-form";
+import AddProgramTaskForm from "./add-program-task-form";
+import ManageProgramCategories from "./manage-program-categories";
+import ManageProgramTasks from "./manage-program-tasks";
 import { Button } from "./ui/Button";
-
-const toArabicRange = (startDate: string) => {
-  const start = new Date(`${startDate}T00:00:00`);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-
-  return `${start.toLocaleDateString("ar-MA", {
-    month: "short",
-    day: "numeric",
-  })} - ${end.toLocaleDateString("ar-MA", {
-    month: "short",
-    day: "numeric",
-  })}`;
-};
 
 const getRoleBadgeClass = (role: Role) => {
   switch (role) {
@@ -35,8 +23,6 @@ const getRoleBadgeClass = (role: Role) => {
       return "bg-green-100 text-green-800 border-green-200";
     case ROLES.EXPELLED:
       return "bg-red-100 text-red-800 border-red-200";
-    case ROLES.NEWCOMER:
-    case ROLES.GUEST:
     default:
       return "bg-gray-100 text-gray-800 border-gray-200";
   }
@@ -44,39 +30,30 @@ const getRoleBadgeClass = (role: Role) => {
 
 export default function ManageProgramDetail({
   programDetails,
-  tasks,
-  categories,
   users,
 }: {
   programDetails: ProgramDetails;
-  tasks: Task[];
-  categories: Category[];
   users: User[];
 }) {
   const router = useRouter();
-  const { program, members, weeks: unsortedWeeks } = programDetails;
+  const { program, members, categories, tasks, friends } = programDetails;
 
-  const weeks = useMemo(
-    () => sortProgramWeeksByStartDate(unsortedWeeks),
-    [unsortedWeeks],
-  );
-
-  const [addingWeek, setAddingWeek] = useState(false);
-  const [showAddWeek, setShowAddWeek] = useState(false);
-  const [weekStartDate, setWeekStartDate] = useState("");
-  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [showAddMembers, setShowAddMembers] = useState(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [addingMembers, setAddingMembers] = useState(false);
-  const [addingTasksForWeek, setAddingTasksForWeek] = useState<string | null>(
-    null,
-  );
-  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [addingTasks, setAddingTasks] = useState(false);
+  const [memberError, setMemberError] = useState("");
+
+  const [showAddFriend, setShowAddFriend] = useState(false);
+  const [friendUserId, setFriendUserId] = useState("");
+  const [friendOtherId, setFriendOtherId] = useState("");
+  const [addingFriend, setAddingFriend] = useState(false);
+  const [friendError, setFriendError] = useState("");
+
   const [deletingProgram, setDeletingProgram] = useState(false);
 
-  const categoryNameById = useMemo(
-    () => new Map(categories.map((category) => [category.id, category.name])),
-    [categories],
+  const usersById = useMemo(
+    () => new Map(users.map((user) => [user.id, user])),
+    [users],
   );
 
   const memberIdSet = useMemo(
@@ -85,25 +62,36 @@ export default function ManageProgramDetail({
   );
 
   const availableMembers = useMemo(
-    () => users.filter((user) => !memberIdSet.has(user.id)),
+    () =>
+      users.filter(
+        (user) =>
+          !memberIdSet.has(user.id) &&
+          [ROLES.MEMBER, ROLES.ADMIN, ROLES.OWNER, ROLES.GUEST].includes(
+            user.role,
+          ),
+      ),
     [users, memberIdSet],
   );
 
+  const memberUsers = useMemo(
+    () => members.map((m) => m.user).filter((u): u is User => !!u),
+    [members],
+  );
+
+  const displayName = (user?: User) =>
+    user?.name ?? user?.full_name ?? user?.username ?? "—";
+
   const deleteProgram = async () => {
     if (!confirm("هل أنت متأكد من حذف هذا البرنامج؟")) return;
-
     setDeletingProgram(true);
-
     try {
       const response = await fetch(`/api/programs/${program.id}`, {
         method: "DELETE",
       });
-
       if (!response.ok) {
         const data = (await response.json()) as { error?: string };
         throw new Error(data.error || "فشل حذف البرنامج");
       }
-
       router.push("/panel/programs");
       router.refresh();
     } catch (err) {
@@ -113,168 +101,92 @@ export default function ManageProgramDetail({
     }
   };
 
-  const addWeek = async () => {
-    if (!weekStartDate) {
-      alert("الرجاء اختيار تاريخ بداية الأسبوع (يوم السبت)");
-      return;
-    }
-
-    setAddingWeek(true);
-
-    try {
-      const response = await fetch(`/api/programs/${program.id}/weeks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          start_date: weekStartDate,
-        }),
-      });
-
-      const data = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(data.error || "فشل إضافة الأسبوع");
-      }
-
-      setWeekStartDate("");
-      setShowAddWeek(false);
-      router.refresh();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "حدث خطأ");
-    } finally {
-      setAddingWeek(false);
-    }
-  };
-
-  const removeWeek = async (programWeekId: string) => {
-    if (!confirm("هل تريد إزالة هذا الأسبوع من البرنامج؟")) return;
-
-    try {
-      const response = await fetch(
-        `/api/programs/${program.id}/weeks?id=${programWeekId}`,
-        { method: "DELETE" },
-      );
-
-      if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        throw new Error(data.error || "فشل إزالة الأسبوع");
-      }
-
-      router.refresh();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "حدث خطأ");
-    }
-  };
-
   const addMembers = async () => {
+    setMemberError("");
     if (selectedMemberIds.length === 0) {
-      alert("الرجاء اختيار عضو واحد على الأقل");
+      setMemberError("الرجاء اختيار عضو واحد على الأقل");
       return;
     }
-
     setAddingMembers(true);
-
     try {
       const response = await fetch(`/api/programs/${program.id}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_ids: selectedMemberIds }),
       });
-
-      const data = (await response.json()) as { error?: string };
-
       if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
         throw new Error(data.error || "فشل إضافة الأعضاء");
       }
-
       setSelectedMemberIds([]);
       setShowAddMembers(false);
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "حدث خطأ");
+      setMemberError(err instanceof Error ? err.message : "حدث خطأ");
     } finally {
       setAddingMembers(false);
     }
   };
 
   const removeMember = async (userId: string) => {
+    if (!confirm("إزالة هذا العضو من البرنامج؟")) return;
     try {
       const response = await fetch(
         `/api/programs/${program.id}/members?user_id=${userId}`,
         { method: "DELETE" },
       );
-
       if (!response.ok) {
         const data = (await response.json()) as { error?: string };
         throw new Error(data.error || "فشل إزالة العضو");
       }
-
       router.refresh();
     } catch (err) {
       alert(err instanceof Error ? err.message : "حدث خطأ");
     }
   };
 
-  const addTasksToWeek = async (weekId: string) => {
-    if (selectedTaskIds.length === 0) {
-      alert("الرجاء اختيار مهمة واحدة على الأقل");
+  const addFriend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFriendError("");
+    if (!friendUserId || !friendOtherId) {
+      setFriendError("الرجاء اختيار العضوين");
       return;
     }
-
-    setAddingTasks(true);
-
+    setAddingFriend(true);
     try {
-      for (const taskId of selectedTaskIds) {
-        const task = tasks.find((item) => item.id === taskId);
-        if (!task) continue;
-
-        const response = await fetch(
-          `/api/programs/${program.id}/week-tasks`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              week_id: weekId,
-              task_id: task.id,
-              task_name: task.name,
-              category_id: task.category_id,
-              category_name: task.category_id
-                ? categoryNameById.get(task.category_id) ?? null
-                : null,
-              task_days: task.days,
-            }),
-          },
-        );
-
+      const response = await fetch(`/api/programs/${program.id}/friends`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: friendUserId,
+          friend_id: friendOtherId,
+        }),
+      });
+      if (!response.ok) {
         const data = (await response.json()) as { error?: string };
-        if (!response.ok) {
-          throw new Error(data.error || "فشل إضافة المهام");
-        }
+        throw new Error(data.error || "فشل إضافة الصداقة");
       }
-
-      setSelectedTaskIds([]);
-      setAddingTasksForWeek(null);
+      setFriendUserId("");
+      setFriendOtherId("");
+      setShowAddFriend(false);
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "حدث خطأ");
+      setFriendError(err instanceof Error ? err.message : "حدث خطأ");
     } finally {
-      setAddingTasks(false);
+      setAddingFriend(false);
     }
   };
 
-  const removeWeekTask = async (weekTaskId: string) => {
-    if (!confirm("هل تريد حذف هذه المهمة من الأسبوع؟")) return;
-
+  const removeFriend = async (friendshipId: string) => {
     try {
-      const response = await fetch(`/api/week-tasks?id=${weekTaskId}`, {
-        method: "DELETE",
-      });
-
+      const response = await fetch(
+        `/api/programs/${program.id}/friends?friendship_id=${friendshipId}`,
+        { method: "DELETE" },
+      );
       if (!response.ok) {
         const data = (await response.json()) as { error?: string };
-        throw new Error(data.error || "فشل حذف المهمة");
+        throw new Error(data.error || "فشل حذف الصداقة");
       }
-
       router.refresh();
     } catch (err) {
       alert(err instanceof Error ? err.message : "حدث خطأ");
@@ -283,333 +195,335 @@ export default function ManageProgramDetail({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          {/* <Link
+          <Link
             href="/panel/programs"
-            className="mb-2 inline-block text-sm text-primary-600 hover:text-primary-800"
+            className="text-sm text-gray-500 hover:text-primary-500"
           >
-            ← العودة إلى البرامج
-          </Link> */}
-          <h1 className="ds-title">{program.name}</h1>
-          <p className="ds-subtitle">
-            {weeks.length} أسابيع · {members.length} أعضاء
-          </p>
+            ← البرامج
+          </Link>
+          <h1 className="mt-1 font-kufam text-2xl font-bold text-gray-900">
+            {program.name}
+          </h1>
+          {program.description && (
+            <p className="mt-1 text-sm text-gray-500">{program.description}</p>
+          )}
         </div>
-
-        {/* <button
-          type="button"
+        <Button
+          variant="danger"
           onClick={deleteProgram}
           disabled={deletingProgram}
-          className="cursor-pointer rounded-md p-2 text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
-          aria-label="حذف البرنامج"
+          className="gap-2"
         >
-          <TrashIcon size={20} weight="regular" />
-        </button> */}
+          <TrashIcon size={18} />
+          حذف البرنامج
+        </Button>
       </div>
 
-      <section className="ds-card space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-semibold text-gray-900">الأعضاء</h2>
+      {/* Members */}
+      <section className="ds-card">
+        <div className="ds-section-header mb-4 flex-row">
+          <div>
+            <h2 className="ds-title">الأعضاء</h2>
+            <p className="ds-subtitle">{members.length} عضو</p>
+          </div>
           <Button
-            variant="secondary"
-            onClick={() => setShowAddMembers((prev) => !prev)}
+            type="button"
+            onClick={() => setShowAddMembers(true)}
+            className="p-2!"
           >
-            {showAddMembers ? "إلغاء" : "إضافة أعضاء"}
+            <PlusIcon size={18} />
           </Button>
         </div>
 
-        {showAddMembers && (
-          <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <div className="max-h-48 space-y-2 overflow-y-auto">
-              {availableMembers.length === 0 ? (
-                <p className="text-sm text-gray-500">
-                  لا يوجد أعضاء متاحون للإضافة.
-                </p>
-              ) : (
-                availableMembers.map((user) => {
-                  const checked = selectedMemberIds.includes(user.id);
-
-                  return (
-                    <label
-                      key={user.id}
-                      className="flex cursor-pointer items-center gap-3 rounded-lg bg-white px-3 py-2"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => {
-                          setSelectedMemberIds((prev) =>
-                            checked
-                              ? prev.filter((id) => id !== user.id)
-                              : [...prev, user.id],
-                          );
-                        }}
-                      />
-                      {user.avatar_url ? (
-                        <Image
-                          src={user.avatar_url}
-                          alt={user.username}
-                          className="size-8 shrink-0 rounded-full"
-                          width={32}
-                          height={32}
-                        />
-                      ) : (
-                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-700">
-                          {user.username.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-gray-900">
-                          {user.full_name ?? user.username}
-                        </p>
-                        <span
-                          className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${getRoleBadgeClass(user.role)}`}
-                        >
-                          {getRoleLabel(user.role)}
-                        </span>
-                      </div>
-                    </label>
-                  );
-                })
-              )}
-            </div>
-            <Button onClick={addMembers} disabled={addingMembers}>
-              {addingMembers ? "جاري الإضافة..." : "تأكيد الإضافة"}
-            </Button>
-          </div>
-        )}
-
-        {members.length === 0 ? (
-          <p className="text-sm text-gray-500">لا يوجد أعضاء في هذا البرنامج.</p>
-        ) : (
-          <ul className="flex flex-wrap gap-6">
-            {members.map((member) => {
-              const user = member.user;
-              const displayName =
-                user?.full_name ?? user?.username ?? member.user_id;
-              const role = user?.role ?? ROLES.MEMBER;
-
-              return (
-                <li
-                  key={member.id}
-                  className="flex items-center gap-3 rounded-full border border-gray-200 bg-white p-3"
-                >
-                  {user?.avatar_url ? (
-                    <Image
-                      src={user.avatar_url}
-                      alt={user.username}
-                      className="size-10 shrink-0 rounded-full"
-                      width={40}
-                      height={40}
-                    />
-                  ) : (
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gray-200 text-sm font-bold text-gray-700">
-                      {(user?.username ?? "?").charAt(0).toUpperCase()}
-                    </div>
-                  )}
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-gray-900">
-                      {displayName}
-                    </p>
-                    {/* {user?.username && user.full_name && (
-                      <p className="truncate text-xs text-gray-500">
-                        @{user.username}
-                      </p>
-                    )} */}
-                    <span
-                      className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${getRoleBadgeClass(role)}`}
-                    >
-                      {getRoleLabel(role)}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeMember(member.user_id)}
-                    className="shrink-0 cursor-pointer rounded-full p-1.5 mr-3 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                    aria-label="إزالة العضو"
+        <div className="flex flex-wrap gap-2">
+          {members.map((member) => {
+            const user = member.user ?? usersById.get(member.user_id);
+            const role = user?.role ?? ROLES.GUEST;
+            return (
+              <div
+                key={member.id}
+                className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2"
+              >
+                {user?.avatar_url ? (
+                  <Image
+                    src={user.avatar_url}
+                    alt=""
+                    width={32}
+                    height={32}
+                    className="size-8 rounded-full"
+                  />
+                ) : (
+                  <span className="flex size-8 items-center justify-center rounded-full bg-gray-200 text-xs font-bold">
+                    {displayName(user).charAt(0)}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">
+                    {displayName(user)}
+                  </p>
+                  <span
+                    className={`rounded-full border px-1.5 py-0.5 text-[10px] ${getRoleBadgeClass(role)}`}
                   >
-                    <XIcon size={16} weight="bold" />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                    {getRoleLabel(role)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeMember(member.user_id)}
+                  className="mr-1 text-gray-400 hover:text-red-500"
+                  aria-label="إزالة"
+                >
+                  <XIcon size={16} />
+                </button>
+              </div>
+            );
+          })}
+          {members.length === 0 && (
+            <p className="text-sm text-gray-500">لا يوجد أعضاء بعد</p>
+          )}
+        </div>
       </section>
 
-      <section className="ds-card space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-semibold text-gray-900">الأسابيع</h2>
+      {/* Friends */}
+      <section className="ds-card">
+        <div className="ds-section-header mb-4 flex-row">
+          <div>
+            <h2 className="ds-title">الأصدقاء داخل البرنامج</h2>
+            <p className="ds-subtitle">
+              يمكن للأصدقاء مشاهدة تقدم بعضهم في هذا البرنامج
+            </p>
+          </div>
           <Button
-            variant="secondary"
-            onClick={() => setShowAddWeek((prev) => !prev)}
+            type="button"
+            onClick={() => setShowAddFriend(true)}
+            className="p-2!"
+            disabled={memberUsers.length < 2}
           >
-            {showAddWeek ? "إلغاء" : "إضافة أسبوع"}
+            <PlusIcon size={18} />
           </Button>
         </div>
 
-        {showAddWeek && (
-          <div className="grid gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-2">
-            <label className="space-y-1 sm:col-span-2">
-              <span className="text-sm text-gray-600">
-                تاريخ بداية الأسبوع (السبت)
-              </span>
-              <input
-                type="date"
-                value={weekStartDate}
-                onChange={(event) => setWeekStartDate(event.target.value)}
-                className="ds-input w-full"
-              />
-            </label>
-            <div className="sm:col-span-2">
-              <Button onClick={addWeek} disabled={addingWeek}>
-                {addingWeek ? "جاري الإضافة..." : "إضافة الأسبوع"}
+        <ul className="space-y-2">
+          {friends.map((f) => {
+            const a = usersById.get(f.user_a_id);
+            const b = usersById.get(f.user_b_id);
+            return (
+              <li
+                key={f.id}
+                className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2 text-sm"
+              >
+                <span>
+                  {displayName(a)} ↔ {displayName(b)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeFriend(f.id)}
+                  className="text-gray-400 hover:text-red-500"
+                >
+                  <TrashIcon size={16} />
+                </button>
+              </li>
+            );
+          })}
+          {friends.length === 0 && (
+            <p className="text-sm text-gray-500">لا توجد صداقات بعد</p>
+          )}
+        </ul>
+      </section>
+
+      {/* Categories + Tasks (panel layout) */}
+      <div className="grid grid-cols-7 gap-6">
+        <section className="ds-card col-span-full lg:col-span-2">
+          <div className="ds-section-header flex-row">
+            <div>
+              <h2 className="ds-title">الفئات</h2>
+              <p className="ds-subtitle">
+                تعريف مجموعات المهام المستخدمة داخل البرنامج.
+              </p>
+            </div>
+            <AddProgramCategoryForm programId={program.id} />
+          </div>
+          <ManageProgramCategories
+            programId={program.id}
+            categories={categories}
+          />
+        </section>
+
+        <section className="ds-card col-span-full lg:col-span-5">
+          <div className="ds-section-header flex-row">
+            <div>
+              <h2 className="ds-title">المهام</h2>
+              <p className="ds-subtitle">
+                إدارة مهام هذا البرنامج وجدولة تنفيذها.
+              </p>
+            </div>
+            <AddProgramTaskForm
+              programId={program.id}
+              categories={categories}
+            />
+          </div>
+          <ManageProgramTasks
+            programId={program.id}
+            tasks={tasks}
+            categories={categories}
+          />
+        </section>
+      </div>
+
+      {/* Members modal */}
+      {showAddMembers && (
+        <div className="ds-modal-overlay">
+          <div className="ds-modal ds-modal-scroll space-y-4">
+            <h3 className="text-xl font-bold text-gray-900">إضافة أعضاء</h3>
+            {memberError && (
+              <div className="ds-error">
+                <p className="text-sm">{memberError}</p>
+              </div>
+            )}
+            <div className="flex max-h-64 flex-wrap gap-2 overflow-y-auto">
+              {availableMembers.map((user) => {
+                const selected = selectedMemberIds.includes(user.id);
+                return (
+                  <button
+                    key={user.id}
+                    type="button"
+                    onClick={() =>
+                      setSelectedMemberIds((prev) =>
+                        selected
+                          ? prev.filter((id) => id !== user.id)
+                          : [...prev, user.id],
+                      )
+                    }
+                    className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-sm ${
+                      selected
+                        ? "border-primary-500 bg-primary-50"
+                        : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    {user.avatar_url ? (
+                      <Image
+                        src={user.avatar_url}
+                        alt=""
+                        width={24}
+                        height={24}
+                        className="size-6 rounded-full"
+                      />
+                    ) : (
+                      <span className="flex size-6 items-center justify-center rounded-full bg-gray-200 text-xs">
+                        {displayName(user).charAt(0)}
+                      </span>
+                    )}
+                    {displayName(user)}
+                  </button>
+                );
+              })}
+              {availableMembers.length === 0 && (
+                <p className="text-sm text-gray-500">لا يوجد مستخدمون متاحون</p>
+              )}
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                onClick={addMembers}
+                disabled={addingMembers}
+                className="flex-1"
+              >
+                {addingMembers ? "جاري الإضافة..." : "تأكيد"}
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={addingMembers}
+                onClick={() => {
+                  setShowAddMembers(false);
+                  setSelectedMemberIds([]);
+                  setMemberError("");
+                }}
+              >
+                إلغاء
               </Button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {weeks.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            لا توجد أسابيع في هذا البرنامج بعد.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {weeks.map((programWeek, index) => (
-              <article
-                key={programWeek.id}
-                className="rounded-xl border border-gray-200 bg-gray-50 p-4"
-              >
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      الأسبوع {index + 1}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {toArabicRange(programWeek.week.start_date)}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setAddingTasksForWeek(
-                          addingTasksForWeek === programWeek.week_id
-                            ? null
-                            : programWeek.week_id,
-                        )
-                      }
-                      className="cursor-pointer rounded-md p-2 text-primary-600 transition-colors hover:bg-primary-50"
-                      aria-label="إضافة مهام"
-                    >
-                      <PlusIcon size={18} weight="bold" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeWeek(programWeek.id)}
-                      className="cursor-pointer rounded-md p-2 text-red-600 transition-colors hover:bg-red-50"
-                      aria-label="إزالة الأسبوع"
-                    >
-                      <TrashIcon size={18} weight="regular" />
-                    </button>
-                  </div>
-                </div>
-
-                {addingTasksForWeek === programWeek.week_id && (
-                  <div className="mb-4 space-y-3 rounded-lg border border-gray-200 bg-white p-3">
-                    <div className="max-h-48 space-y-2 overflow-y-auto">
-                      {tasks.map((task) => {
-                        const alreadyAdded = programWeek.tasks.some(
-                          (weekTask) => weekTask.task_id === task.id,
-                        );
-                        const checked = selectedTaskIds.includes(task.id);
-
-                        return (
-                          <label
-                            key={task.id}
-                            className={`flex items-center gap-2 rounded-md px-2 py-1 ${
-                              alreadyAdded
-                                ? "opacity-50"
-                                : "cursor-pointer hover:bg-gray-50"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              disabled={alreadyAdded}
-                              checked={checked}
-                              onChange={() => {
-                                setSelectedTaskIds((prev) =>
-                                  checked
-                                    ? prev.filter((id) => id !== task.id)
-                                    : [...prev, task.id],
-                                );
-                              }}
-                            />
-                            <span className="text-sm">{task.name}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => addTasksToWeek(programWeek.week_id)}
-                        disabled={addingTasks}
-                      >
-                        {addingTasks ? "جاري الإضافة..." : "تأكيد"}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => {
-                          setAddingTasksForWeek(null);
-                          setSelectedTaskIds([]);
-                        }}
-                      >
-                        إلغاء
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {programWeek.tasks.length === 0 ? (
-                  <p className="text-sm text-gray-500">
-                    لا توجد مهام لهذا الأسبوع.
-                  </p>
-                ) : (
-                  <ul className="flex flex-wrap gap-3">
-                    {programWeek.tasks.map((task) => (
-                      <li
-                        key={task.id}
-                        className="flex items-center justify-between gap-6 rounded-full border border-gray-200 bg-white pl-3 pr-6 py-3"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">
-                            {task.task_name}
-                          </p>
-                          <p className="mt-1 text-xs text-gray-500 flex items-center gap-3">
-                            {task.category_name && <span className="ds-badge">{task.category_name}</span>}
-                            <span className="ds-badge">{task.task_days?.length ?? ALL_DAYS.length} أيام</span>
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeWeekTask(task.id)}
-                          className="cursor-pointer rounded-full p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                          aria-label="حذف المهمة"
-                        >
-                          <XIcon size={16} weight="bold" />
-                        </button>
-                      </li>
+      {/* Friend modal */}
+      {showAddFriend && (
+        <div className="ds-modal-overlay">
+          <div className="ds-modal">
+            <h3 className="mb-4 text-xl font-bold text-gray-900">
+              ربط صديقين في البرنامج
+            </h3>
+            {friendError && (
+              <div className="ds-error mb-4">
+                <p className="text-sm">{friendError}</p>
+              </div>
+            )}
+            <form onSubmit={addFriend} className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  العضو
+                </label>
+                <select
+                  value={friendUserId}
+                  onChange={(e) => setFriendUserId(e.target.value)}
+                  className="ds-select"
+                  required
+                >
+                  <option value="">اختر</option>
+                  {memberUsers.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {displayName(u)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  الصديق
+                </label>
+                <select
+                  value={friendOtherId}
+                  onChange={(e) => setFriendOtherId(e.target.value)}
+                  className="ds-select"
+                  required
+                >
+                  <option value="">اختر</option>
+                  {memberUsers
+                    .filter((u) => u.id !== friendUserId)
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {displayName(u)}
+                      </option>
                     ))}
-                  </ul>
-                )}
-              </article>
-            ))}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="submit"
+                  disabled={addingFriend}
+                  className="flex-1"
+                >
+                  {addingFriend ? "جاري الربط..." : "ربط"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={addingFriend}
+                  onClick={() => {
+                    setShowAddFriend(false);
+                    setFriendUserId("");
+                    setFriendOtherId("");
+                    setFriendError("");
+                  }}
+                >
+                  إلغاء
+                </Button>
+              </div>
+            </form>
           </div>
-        )}
-      </section>
+        </div>
+      )}
     </div>
   );
 }

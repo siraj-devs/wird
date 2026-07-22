@@ -1,5 +1,5 @@
 import { ROLES } from "@/lib/roles";
-import { supabaseAuth } from "@/lib/supabase";
+import { supabaseNew } from "@/lib/supabase";
 
 export type ConnectionType = "discord" | "telegram";
 
@@ -85,14 +85,14 @@ export async function upsertConnection(
 ): Promise<{ connectionId: string; userId: string | null }> {
   const now = new Date().toISOString();
 
-  const { data: existing } = await supabaseAuth
+  const { data: existing } = await supabaseNew
     .from("connections")
     .select("id, user_id")
     .eq("id", input.id)
     .maybeSingle();
 
   if (existing) {
-    await supabaseAuth
+    await supabaseNew
       .from("connections")
       .update({
         name: input.name,
@@ -108,7 +108,7 @@ export async function upsertConnection(
     };
   }
 
-  const { error } = await supabaseAuth.from("connections").insert({
+  const { error } = await supabaseNew.from("connections").insert({
     id: input.id,
     user_id: null,
     name: input.name,
@@ -132,7 +132,7 @@ export async function createAuthSession(params: {
   userId?: string | null;
   token: string;
 }) {
-  const { error } = await supabaseAuth.from("sessions").insert({
+  const { error } = await supabaseNew.from("sessions").insert({
     connection_id: params.connectionId,
     user_id: params.userId ?? null,
     token: params.token,
@@ -151,7 +151,7 @@ export async function getAuthUserRole(
   if (!payload.connectionId) return null;
 
   if (!payload.userId) {
-    const { data } = await supabaseAuth
+    const { data } = await supabaseNew
       .from("connections")
       .select("id, user_id")
       .eq("id", payload.connectionId)
@@ -159,7 +159,7 @@ export async function getAuthUserRole(
 
     if (!data) return null;
     if (data.user_id) {
-      const { data: user } = await supabaseAuth
+      const { data: user } = await supabaseNew
         .from("users")
         .select("role")
         .eq("id", data.user_id)
@@ -169,7 +169,7 @@ export async function getAuthUserRole(
     return ROLES.NEWCOMER;
   }
 
-  const { data } = await supabaseAuth
+  const { data } = await supabaseNew
     .from("users")
     .select("role")
     .eq("id", payload.userId)
@@ -181,7 +181,7 @@ export async function getAuthUserRole(
 export async function getAuthUserFromSession(
   token: string,
 ): Promise<{ id: string; role: Role } | null> {
-  const { data: session } = await supabaseAuth
+  const { data: session } = await supabaseNew
     .from("sessions")
     .select("user_id, connection_id")
     .eq("token", token)
@@ -194,7 +194,7 @@ export async function getAuthUserFromSession(
     return { id: "", role: ROLES.NEWCOMER };
   }
 
-  const { data: user } = await supabaseAuth
+  const { data: user } = await supabaseNew
     .from("users")
     .select("id, role")
     .eq("id", session.user_id)
@@ -216,7 +216,7 @@ export async function completeOnboarding(params: {
 }): Promise<User> {
   const now = new Date().toISOString();
 
-  const { data: connection, error: connectionLookupError } = await supabaseAuth
+  const { data: connection, error: connectionLookupError } = await supabaseNew
     .from("connections")
     .select("*")
     .eq("id", params.connectionId)
@@ -230,7 +230,7 @@ export async function completeOnboarding(params: {
     throw new Error("User already registered");
   }
 
-  const { data: newUser, error: userError } = await supabaseAuth
+  const { data: newUser, error: userError } = await supabaseNew
     .from("users")
     .insert({
       name: params.name,
@@ -248,14 +248,14 @@ export async function completeOnboarding(params: {
     throw new Error("Failed to create user");
   }
 
-  const { error: linkError } = await supabaseAuth
+  const { error: linkError } = await supabaseNew
     .from("connections")
     .update({ user_id: newUser.id })
     .eq("id", params.connectionId);
 
   if (linkError) {
     console.error("Error linking connection:", linkError);
-    await supabaseAuth.from("users").delete().eq("id", newUser.id);
+    await supabaseNew.from("users").delete().eq("id", newUser.id);
     throw new Error("Failed to link connection");
   }
 

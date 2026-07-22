@@ -1,19 +1,13 @@
-import { getCategories, getTasks, getUsers } from "@/actions";
+import { getCategories, getTasks } from "@/actions";
 import AddCategoryForm from "@/components/add-category-form";
 import AddTaskForm from "@/components/add-task-form";
 import ManageCategories from "@/components/manage-categoryies";
 import ManageTasks from "@/components/manage-tasks";
-import ManageUsers from "@/components/manage-users";
-import { checkRole } from "@/lib/auth-server";
-import { ROLES } from "@/lib/roles";
 
 export default async function Page() {
-  const { id } = await checkRole([ROLES.OWNER]);
-
-  const [categories, tasks, users] = await Promise.all([
+  const [categories, tasks] = await Promise.all([
     getCategories(),
     getTasks(),
-    getUsers(),
   ]);
 
   return (
@@ -46,15 +40,6 @@ export default async function Page() {
           <ManageTasks tasks={tasks} categories={categories} />
         </section>
       </div>
-
-      <section className="ds-card">
-        <h2 className="ds-title mb-1">المستخدمون</h2>
-        <p className="ds-subtitle mb-6">
-          مراقبة الأعضاء وتعديل الأدوار داخل البرنامج. يتم تعيين الصديق من خلال
-          لوحة الإدارة.
-        </p>
-        <ManageUsers id={id} users={users} />
-      </section>
     </div>
   );
 }

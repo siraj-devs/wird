@@ -1,18 +1,17 @@
 "use client";
 
+import type { ProgramDetails } from "@/lib/programs";
 import { TrashIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type MouseEvent } from "react";
 import { Button } from "./ui/Button";
 
-type ProgramSummary = {
-  program: Program;
-  members: (ProgramMember & { user?: User })[];
-  weeks: (ProgramWeek & { week: Week; tasks: WeekTask[] })[];
-};
-
-export default function ProgramList({ programs }: { programs: ProgramSummary[] }) {
+export default function ProgramList({
+  programs,
+}: {
+  programs: ProgramDetails[];
+}) {
   const router = useRouter();
   const [newProgramName, setNewProgramName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -84,69 +83,51 @@ export default function ProgramList({ programs }: { programs: ProgramSummary[] }
 
   return (
     <div className="space-y-6">
-      <section className="ds-card">
-        <h2 className="ds-title mb-1">إنشاء برنامج جديد</h2>
-        <p className="ds-subtitle mb-4">
-          البرنامج يحتوي على أسابيع متتابعة، وكل أسبوع له مهام خاصة.
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <input
+          value={newProgramName}
+          onChange={(e) => setNewProgramName(e.target.value)}
+          placeholder="اسم البرنامج الجديد"
+          className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none"
+        />
+        <Button onClick={createProgram} disabled={creating}>
+          {creating ? "جاري الإنشاء..." : "إنشاء برنامج"}
+        </Button>
+      </div>
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {programs.map(({ program, members, categories, tasks }) => (
+          <Link
+            key={program.id}
+            href={`/panel/programs/${program.id}`}
+            className="group relative rounded-xl border border-gray-200 bg-white p-5 transition hover:border-primary-300 hover:shadow-sm"
+          >
+            <button
+              type="button"
+              onClick={(e) => deleteProgram(e, program.id)}
+              disabled={deletingProgramId === program.id}
+              className="absolute top-3 left-3 rounded-md p-1.5 text-gray-300 opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
+              aria-label="حذف"
+            >
+              <TrashIcon size={18} />
+            </button>
+            <h3 className="font-kufam text-lg font-bold text-gray-900">
+              {program.name}
+            </h3>
+            <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-500">
+              <span>{members.length} أعضاء</span>
+              <span>{categories.length} فئات</span>
+              <span>{tasks.length} مهام</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {programs.length === 0 && (
+        <p className="py-12 text-center text-sm text-gray-500">
+          لا توجد برامج بعد. أنشئ برنامجاً للبدء.
         </p>
-
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <input
-            type="text"
-            value={newProgramName}
-            onChange={(event) => setNewProgramName(event.target.value)}
-            placeholder="اسم البرنامج"
-            className="ds-input flex-1"
-          />
-          <Button onClick={createProgram} disabled={creating}>
-            {creating ? "جاري الإنشاء..." : "إنشاء برنامج"}
-          </Button>
-        </div>
-
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      </section>
-
-      {programs.length === 0 ? (
-        <section className="ds-card">
-          <p className="text-sm text-gray-500">لا توجد برامج حتى الآن.</p>
-        </section>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {programs.map(({ program, members, weeks }) => {
-            const totalTasks = weeks.reduce(
-              (count, week) => count + week.tasks.length,
-              0,
-            );
-
-            return (
-              <Link
-                key={program.id}
-                href={`/panel/programs/${program.id}`}
-                className="ds-card group block transition-shadow hover:shadow-md"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <h2 className="ds-title truncate">{program.name}</h2>
-                    <p className="ds-subtitle mt-1">
-                      {weeks.length} أسابيع · {members.length} أعضاء ·{" "}
-                      {totalTasks} مهمة
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={(event) => deleteProgram(event, program.id)}
-                    disabled={deletingProgramId === program.id}
-                    className="cursor-pointer rounded-md p-2 text-red-600 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-50 disabled:opacity-50"
-                    aria-label="حذف البرنامج"
-                  >
-                    <TrashIcon size={20} weight="regular" />
-                  </button>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
       )}
     </div>
   );

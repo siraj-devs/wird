@@ -6,7 +6,7 @@ import {
 } from "@/lib/auth-db";
 import { setAuthCookie } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
-import { supabaseAuth } from "@/lib/supabase";
+import { supabaseNew } from "@/lib/supabase";
 import { APIError } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -61,7 +61,7 @@ export async function PATCH(request: NextRequest) {
       userId: user.id,
     });
 
-    await supabaseAuth.from("sessions").delete().eq("token", token);
+    await supabaseNew.from("sessions").delete().eq("token", token);
     await createAuthSession({
       connectionId: payload.connectionId,
       userId: user.id,

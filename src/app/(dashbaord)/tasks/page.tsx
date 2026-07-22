@@ -73,6 +73,7 @@ export default async function Page({
         weekNumber: section.weekNumber,
         hasActiveWeek: section.hasActiveWeek,
         categories: section.categories,
+        friendProgress: section.friendProgress,
       }))
     : undefined;
 
@@ -124,7 +125,7 @@ export default async function Page({
         </div>
       </div>
 
-      <div className="mt-24">
+      <div className="mt-24 space-y-4">
         <ShowCategoriesWithTasks
           categories={categories}
           programSections={programSections}

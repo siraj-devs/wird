@@ -1,32 +1,27 @@
-import { checkAuth } from "@/lib/api";
-import { APIError } from "@/lib/api";
+import { APIError, checkAuth } from "@/lib/api";
 import { ROLES } from "@/lib/roles";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseNew } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
     await checkAuth(request, ROLES.OWNER, ROLES.ADMIN);
 
-    const { data: programs, error } = await supabaseAdmin
+    const { data, error } = await supabaseNew
       .from("programs")
       .select("*")
       .order("created_at", { ascending: false });
 
     if (error) throw new APIError(500, error.message);
-
-    return NextResponse.json({ programs });
-  } catch (error: unknown) {
+    return NextResponse.json({ programs: data ?? [] });
+  } catch (error) {
     if (error instanceof APIError) {
       return NextResponse.json(
         { error: error.message },
         { status: error.status },
       );
     }
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -35,31 +30,27 @@ export async function POST(request: NextRequest) {
     await checkAuth(request, ROLES.OWNER, ROLES.ADMIN);
 
     const body = await request.json();
-    const { name } = body;
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const description =
+      typeof body.description === "string" ? body.description.trim() : null;
 
-    if (!name || typeof name !== "string" || !name.trim()) {
-      throw new APIError(400, "name is required");
-    }
+    if (!name) throw new APIError(400, "Program name is required");
 
-    const { data: program, error } = await supabaseAdmin
+    const { data, error } = await supabaseNew
       .from("programs")
-      .insert({ name: name.trim() })
+      .insert({ name, description: description || null })
       .select()
       .single();
 
     if (error) throw new APIError(500, error.message);
-
-    return NextResponse.json({ program }, { status: 201 });
-  } catch (error: unknown) {
+    return NextResponse.json({ program: data }, { status: 201 });
+  } catch (error) {
     if (error instanceof APIError) {
       return NextResponse.json(
         { error: error.message },
         { status: error.status },
       );
     }
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

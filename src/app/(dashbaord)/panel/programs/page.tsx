@@ -13,7 +13,8 @@ export default async function Page() {
       <div className="mb-6">
         <h1 className="ds-title">البرامج</h1>
         <p className="ds-subtitle">
-          إنشاء وإدارة البرامج بأسابيع متتابعة ومهام خاصة لكل أسبوع.
+          إدارة البرامج: الأعضاء، الأصدقاء، الفئات، والمهام (متكررة أو بفترة
+          زمنية).
         </p>
       </div>
 
