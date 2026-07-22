@@ -1,5 +1,10 @@
-import { verifyToken } from "@/lib/auth";
-import { getAuthUserRole } from "@/lib/auth-db";
+import { generateToken, verifyToken } from "@/lib/auth";
+import {
+  completeOnboarding,
+  createAuthSession,
+  getAuthUserRole,
+} from "@/lib/auth-db";
+import { setAuthCookie } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
 import { supabaseAuth } from "@/lib/supabase";
 import { APIError } from "@/lib/api";
@@ -11,10 +16,14 @@ export async function PATCH(request: NextRequest) {
     if (!token) throw new APIError(401, "Unauthorized");
 
     const payload = verifyToken(token);
-    if (!payload) throw new APIError(401, "Unauthorized");
+    if (!payload?.connectionId) throw new APIError(401, "Unauthorized");
 
-    const role = await getAuthUserRole(payload.userId);
-    if (!role || role !== ROLES.NEWCOMER) throw new APIError(403, "Forbidden");
+    const role = await getAuthUserRole(payload);
+    if (!role || role !== ROLES.NEWCOMER)
+      throw new APIError(403, "Forbidden");
+
+    if (payload.userId)
+      throw new APIError(403, "Profile already completed");
 
     const body = await request.json();
     const { fullName, phoneNumber, email } = body as {
@@ -30,8 +39,8 @@ export async function PATCH(request: NextRequest) {
     if (!arabicRegex.test(fullName) || fullName.trim().length === 0)
       throw new APIError(400, "Full name must be in Arabic");
 
-    const cleanPhone = phoneNumber.replace(/\s/g, "");
-    const phoneRegex = /^\+212[5-7]\d{8}$/;
+    const cleanPhone = phoneNumber.replace(/\s/g, "").replace(/^\+/, "");
+    const phoneRegex = /^212[5-7]\d{8}$/;
     if (!phoneRegex.test(cleanPhone))
       throw new APIError(400, "Invalid Moroccan phone number");
 
@@ -40,30 +49,34 @@ export async function PATCH(request: NextRequest) {
     if (!emailRegex.test(cleanEmail))
       throw new APIError(400, "Invalid email address");
 
-    const { data: updatedUser, error } = await supabaseAuth
-      .from("users")
-      .update({
-        name: fullName.trim(),
-        phone: cleanPhone,
-        email: cleanEmail,
-        role: "guest",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", payload.userId)
-      .select()
-      .single();
+    const user = await completeOnboarding({
+      connectionId: payload.connectionId,
+      name: fullName.trim(),
+      phone: cleanPhone,
+      email: cleanEmail,
+    });
 
-    if (error)
-      throw new APIError(500, "Failed to update profile" + error.message);
+    const newToken = generateToken({
+      connectionId: payload.connectionId,
+      userId: user.id,
+    });
+
+    await supabaseAuth.from("sessions").delete().eq("token", token);
+    await createAuthSession({
+      connectionId: payload.connectionId,
+      userId: user.id,
+      token: newToken,
+    });
+    await setAuthCookie(newToken);
 
     return NextResponse.json({
       message: "Profile updated successfully",
       user: {
-        id: updatedUser.id,
-        name: updatedUser.name,
-        phone: updatedUser.phone,
-        email: updatedUser.email,
-        role: updatedUser.role,
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        role: user.role,
       },
     });
   } catch (error) {

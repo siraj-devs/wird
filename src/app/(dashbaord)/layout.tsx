@@ -1,6 +1,5 @@
-import { getUser, getUsers } from "@/actions";
+import { getSessionUser, getUsers } from "@/actions";
 import UserDropdown from "@/components/user-dropdown";
-import { getIdFromToken } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
 import { redirect } from "next/navigation";
 
@@ -9,8 +8,7 @@ export default async function Layout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const id = await getIdFromToken();
-  const user = await getUser(id);
+  const user = await getSessionUser();
   if (!user) redirect("/logout");
 
   const users = [ROLES.OWNER, ROLES.ADMIN].includes(user.role)

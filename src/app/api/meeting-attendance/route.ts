@@ -22,9 +22,13 @@ const requireAuthorizedUser = async (request: NextRequest) => {
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized - Invalid token");
 
-  const role = await getAuthUserRole(payload.userId);
+  const role = await getAuthUserRole(payload);
   if (!role || !ALLOWED_ROLES.includes(role)) {
     throw new APIError(403, "Forbidden - Admin or owner role required");
+  }
+
+  if (!payload.userId) {
+    throw new APIError(403, "Complete onboarding first");
   }
 
   return { id: payload.userId, role };

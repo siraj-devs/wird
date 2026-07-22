@@ -1,7 +1,9 @@
+import { FEEDBACK_ENABLED } from "@/consts";
 import { getUsers } from "@/actions";
 import { checkRole } from "@/lib/auth-server";
 import { ROLES } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
+import { redirect } from "next/navigation";
 
 const QUESTION_LABELS: Record<string, string> = {
   "1": "أي المحطات كانت الأكثر ملامسة لقلبك وأحدثت فيك أثراً ملموساً؟",
@@ -57,6 +59,8 @@ const normalizeAnswer = (value: unknown) => {
 };
 
 export default async function Page() {
+  if (!FEEDBACK_ENABLED) redirect("/panel");
+
   await checkRole([ROLES.OWNER, ROLES.ADMIN]);
 
   const [{ data: feedbacks }, users] = await Promise.all([

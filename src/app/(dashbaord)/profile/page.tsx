@@ -1,5 +1,5 @@
-import { getUser } from "@/actions";
-import { checkRole, getIdFromToken } from "@/lib/auth-server";
+import { getSessionUser } from "@/actions";
+import { checkRole } from "@/lib/auth-server";
 import { getRoleLabel, ROLES } from "@/lib/roles";
 import Image from "next/image";
 import { redirect } from "next/navigation";
@@ -23,11 +23,12 @@ export default async function ProfilePage() {
     ROLES.EXPELLED,
   ]);
 
-  const id = await getIdFromToken();
-  const user = await getUser(id);
+  const user = await getSessionUser();
   if (!user) redirect("/logout");
 
   const connections = user.connections ?? [];
+  const primary = connections[0];
+  const displayName = user.name ?? primary?.name ?? "—";
 
   return (
     <div className="mx-auto w-full max-w-lg">
@@ -40,23 +41,21 @@ export default async function ProfilePage() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="flex items-center gap-4 border-b border-gray-100 px-5 py-5">
-          {user.avatar_url ? (
+          {primary?.avatar ? (
             <Image
-              src={user.avatar_url}
-              alt={user.username}
+              src={primary.avatar}
+              alt={displayName}
               width={56}
               height={56}
               className="size-14 rounded-full"
             />
           ) : (
             <div className="flex size-14 items-center justify-center rounded-full bg-gray-200 text-lg font-bold text-gray-700">
-              {(user.name ?? user.username).charAt(0)}
+              {displayName.charAt(0)}
             </div>
           )}
           <div className="min-w-0">
-            <p className="truncate font-semibold text-gray-900">
-              {user.name ?? user.username}
-            </p>
+            <p className="truncate font-semibold text-gray-900">{displayName}</p>
             <p className="text-sm text-gray-500">{getRoleLabel(user.role)}</p>
           </div>
         </div>
@@ -65,7 +64,6 @@ export default async function ProfilePage() {
           <InfoRow label="الاسم" value={user.name ?? "—"} />
           <InfoRow label="البريد الإلكتروني" value={user.email ?? "—"} />
           <InfoRow label="رقم الهاتف" value={user.phone ?? "—"} />
-          <InfoRow label="اسم المستخدم" value={`@${user.username}`} />
         </dl>
       </div>
 

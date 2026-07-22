@@ -1,5 +1,6 @@
 "use client";
 
+import { FEEDBACK_ENABLED } from "@/consts";
 import {
   CalendarBlankIcon,
   ChartBarIcon,
@@ -38,10 +39,14 @@ const NAVIGATION_ITEMS = [
     href: "/panel/meeting-attendance",
     icon: (props: IconProps) => <UserCheckIcon {...props} />,
   },
-  {
-    href: "/panel/feedbacks",
-    icon: (props: IconProps) => <NotepadIcon {...props} />,
-  },
+  ...(FEEDBACK_ENABLED
+    ? [
+        {
+          href: "/panel/feedbacks",
+          icon: (props: IconProps) => <NotepadIcon {...props} />,
+        },
+      ]
+    : []),
 ];
 
 export function PanelNavigation() {

@@ -1,6 +1,6 @@
 import env from "@/env";
 import { generateToken } from "@/lib/auth";
-import { createAuthSession, upsertConnectionUser } from "@/lib/auth-db";
+import { createAuthSession, upsertConnection } from "@/lib/auth-db";
 import { setAuthCookie } from "@/lib/auth-server";
 import { fetchWithTimeout } from "@/lib/utils";
 import { cookies } from "next/headers";
@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
       telegramUser.preferred_username ??
       telegramUser.name.toLowerCase().replace(/\s+/g, "_");
 
-    const userId = await upsertConnectionUser({
+    const { connectionId, userId } = await upsertConnection({
       id: String(telegramUser.sub),
       type: "telegram",
       name: telegramUser.name,
@@ -197,9 +197,12 @@ export async function GET(request: NextRequest) {
       avatar: telegramUser.picture ?? null,
     });
 
-    const token = generateToken({ userId });
+    const token = generateToken({
+      connectionId,
+      ...(userId ? { userId } : {}),
+    });
     await setAuthCookie(token);
-    await createAuthSession(userId, token);
+    await createAuthSession({ connectionId, userId, token });
 
     return NextResponse.redirect(new URL("/", request.url));
   } catch (error) {

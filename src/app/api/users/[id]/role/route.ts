@@ -18,7 +18,7 @@ export async function PUT(
     const payload = verifyToken(token);
     if (!payload) throw new APIError(401, "Unauthorized");
 
-    const role = await getAuthUserRole(payload.userId);
+    const role = await getAuthUserRole(payload);
     if (!role || role !== ROLES.OWNER) throw new APIError(403, "Forbidden");
 
     const body = await request.json();

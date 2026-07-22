@@ -1,4 +1,4 @@
-import { mapAuthUser } from "./lib/auth-db";
+import { mapAuthUser, mapPendingConnection } from "./lib/auth-db";
 import { supabaseAdmin, supabaseAuth } from "./lib/supabase";
 import {
   getWeekOrderByStartDate,
@@ -7,6 +7,7 @@ import {
 
 export const getUser = async (id: string) => {
   try {
+    if (!id) return null;
     const { data, error } = await supabaseAuth
       .from("users")
       .select("*, connections(*)")
@@ -14,6 +15,36 @@ export const getUser = async (id: string) => {
       .single();
     if (error) throw error;
     return mapAuthUser(data);
+  } catch {
+    return null;
+  }
+};
+
+/** Resolve the current session to a User (pending newcomers have no users row yet). */
+export const getSessionUser = async (): Promise<User | null> => {
+  try {
+    const { getCurrentUser } = await import("./lib/auth-server");
+    const payload = await getCurrentUser();
+    if (!payload?.connectionId) return null;
+
+    if (payload.userId) {
+      const user = await getUser(payload.userId);
+      if (user) return user;
+    }
+
+    const { data: connection, error } = await supabaseAuth
+      .from("connections")
+      .select("*")
+      .eq("id", payload.connectionId)
+      .maybeSingle();
+
+    if (error || !connection) return null;
+
+    if (connection.user_id) {
+      return getUser(connection.user_id as string);
+    }
+
+    return mapPendingConnection(connection as Connection);
   } catch {
     return null;
   }

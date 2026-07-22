@@ -43,17 +43,28 @@ export async function getIdFromToken() {
   if (!token) throw new Error("No auth token");
   const decoded = jwt.decode(token) as JWTPayload | null;
   if (!decoded?.userId) throw new Error("Invalid auth token");
-  const id = decoded.userId;
-  return id;
+  return decoded.userId;
+}
+
+export async function getConnectionIdFromToken() {
+  const token = await getAuthToken();
+  if (!token) throw new Error("No auth token");
+  const decoded = jwt.decode(token) as JWTPayload | null;
+  if (!decoded?.connectionId) throw new Error("Invalid auth token");
+  return decoded.connectionId;
 }
 
 export async function checkRole(
   roles: ROLES[],
   init: { id?: string; user?: User } = {},
 ) {
-  const { getUser } = await import("@/actions");
-  const id = init.id ?? (await getIdFromToken());
-  const user = init.user ?? (await getUser(id))!;
+  const { getSessionUser, getUser } = await import("@/actions");
+  const user =
+    init.user ??
+    (init.id ? await getUser(init.id) : await getSessionUser());
+
+  if (!user) redirect("/logout");
+
   if (!roles.includes(user.role)) {
     if ([ROLES.NEWCOMER, ROLES.GUEST, ROLES.EXPELLED].includes(user.role))
       redirect("/");

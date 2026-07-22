@@ -6,13 +6,14 @@
 -- ============================================
 --    USERS
 -- ============================================
+-- Created only after the user submits onboarding (name, phone, email).
 
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT,
   phone TEXT,
   email TEXT,
-  role TEXT NOT NULL DEFAULT 'newcomer'
+  role TEXT NOT NULL DEFAULT 'guest'
     CHECK (role IN ('newcomer', 'guest', 'member', 'admin', 'owner', 'expelled')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -41,12 +42,11 @@ CREATE TRIGGER update_users_updated_at
 -- ============================================
 --    CONNECTIONS
 -- ============================================
--- One user → many connections (Discord / Telegram).
--- id is the provider's user id (primary key).
+-- Created at OAuth login. user_id is set after onboarding.
 
 CREATE TABLE IF NOT EXISTS connections (
   id TEXT PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   username TEXT NOT NULL,
   avatar TEXT,
@@ -57,8 +57,11 @@ CREATE TABLE IF NOT EXISTS connections (
 
 CREATE INDEX IF NOT EXISTS idx_connections_user_id ON connections(user_id);
 CREATE INDEX IF NOT EXISTS idx_connections_type ON connections(type);
+
+DROP INDEX IF EXISTS idx_connections_user_type;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_connections_user_type
-  ON connections(user_id, type);
+  ON connections(user_id, type)
+  WHERE user_id IS NOT NULL;
 
 ALTER TABLE connections ENABLE ROW LEVEL SECURITY;
 
@@ -66,15 +69,18 @@ ALTER TABLE connections ENABLE ROW LEVEL SECURITY;
 -- ============================================
 --    SESSIONS
 -- ============================================
+-- Tied to a connection; user_id filled after onboarding.
 
 CREATE TABLE IF NOT EXISTS sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  connection_id TEXT NOT NULL REFERENCES connections(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   token TEXT NOT NULL UNIQUE,
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_sessions_connection_id ON sessions(connection_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);

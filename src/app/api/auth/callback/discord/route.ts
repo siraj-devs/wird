@@ -1,7 +1,7 @@
 import env from "@/env";
 import { DISCORD_AUTH_ENABLED } from "@/consts";
 import { generateToken } from "@/lib/auth";
-import { createAuthSession, upsertConnectionUser } from "@/lib/auth-db";
+import { createAuthSession, upsertConnection } from "@/lib/auth-db";
 import { setAuthCookie } from "@/lib/auth-server";
 import { fetchWithTimeout } from "@/lib/utils";
 import { cookies } from "next/headers";
@@ -68,20 +68,20 @@ export async function GET(request: NextRequest) {
       ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
       : null;
 
-    const userId = await upsertConnectionUser({
+    const { connectionId, userId } = await upsertConnection({
       id: discordUser.id,
       type: "discord",
       name: discordUser.username,
       username: discordUser.username,
       avatar: avatarUrl,
-      email: discordUser.email ?? null,
     });
 
     const token = generateToken({
-      userId: userId,
+      connectionId,
+      ...(userId ? { userId } : {}),
     });
     await setAuthCookie(token);
-    await createAuthSession(userId, token);
+    await createAuthSession({ connectionId, userId, token });
 
     try {
       await fetchWithTimeout(

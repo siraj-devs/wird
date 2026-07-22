@@ -12,6 +12,10 @@ export async function GET(request: NextRequest) {
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized - Invalid token");
 
+  if (!payload.userId) {
+    return NextResponse.json({ submitted: false });
+  }
+
   try {
     const { data, error } = await supabaseAdmin
       .from("feedbacks")
@@ -43,9 +47,12 @@ export async function POST(request: NextRequest) {
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized - Invalid token");
 
-  const role = await getAuthUserRole(payload.userId);
+  const role = await getAuthUserRole(payload);
   if (!role || ![ROLES.MEMBER, ROLES.ADMIN, ROLES.OWNER].includes(role))
     throw new APIError(403, "Forbidden - Member role required");
+
+  if (!payload.userId)
+    throw new APIError(403, "Complete onboarding first");
 
   const body = await request.json();
   const { answers } = body;

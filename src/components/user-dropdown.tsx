@@ -1,6 +1,7 @@
 "use client";
 
 import { hasRole } from "@/lib/auth";
+import { FEEDBACK_ENABLED } from "@/consts";
 import { getRoleLabel } from "@/lib/roles";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -105,13 +106,15 @@ export default function UserDropdown({
                   >
                     متابعة مهامي
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => navigateTo("/feedback")}
-                    className="cursor-pointer text-right"
-                  >
-                    تقييم الرحلة
-                  </button>
+                  {FEEDBACK_ENABLED && (
+                    <button
+                      type="button"
+                      onClick={() => navigateTo("/feedback")}
+                      className="cursor-pointer text-right"
+                    >
+                      تقييم الرحلة
+                    </button>
+                  )}
                   {user.friend_id && (
                     <button
                       type="button"

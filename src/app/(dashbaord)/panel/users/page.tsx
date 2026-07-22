@@ -1,6 +1,7 @@
 import { getConnections, getUsers } from "@/actions";
+import ManageAuthUsers from "@/components/manage-auth-users";
 import { checkRole } from "@/lib/auth-server";
-import { getRoleLabel, ROLES } from "@/lib/roles";
+import { ROLES } from "@/lib/roles";
 import Image from "next/image";
 
 function formatDate(value: string) {
@@ -15,7 +16,7 @@ function formatDate(value: string) {
 }
 
 export default async function PanelUsersPage() {
-  await checkRole([ROLES.OWNER, ROLES.ADMIN]);
+  const currentUser = await checkRole([ROLES.OWNER, ROLES.ADMIN]);
 
   const [users, connections] = await Promise.all([
     getUsers(),
@@ -23,6 +24,7 @@ export default async function PanelUsersPage() {
   ]);
 
   const usersById = new Map(users.map((user) => [user.id, user]));
+  const canEditRoles = currentUser.role === ROLES.OWNER;
 
   return (
     <div className="ds-page space-y-8">
@@ -36,74 +38,11 @@ export default async function PanelUsersPage() {
           </div>
         </div>
 
-        {users.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-500">
-            لا يوجد مستخدمون بعد.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-right text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-gray-500">
-                  <th className="px-3 py-2 font-medium">المستخدم</th>
-                  <th className="px-3 py-2 font-medium">البريد</th>
-                  <th className="px-3 py-2 font-medium">الهاتف</th>
-                  <th className="px-3 py-2 font-medium">الدور</th>
-                  <th className="px-3 py-2 font-medium">الاتصالات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id} className="border-b border-gray-100">
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-2">
-                        {user.avatar_url ? (
-                          <Image
-                            src={user.avatar_url}
-                            alt={user.username}
-                            width={32}
-                            height={32}
-                            className="size-8 rounded-full"
-                          />
-                        ) : (
-                          <div className="flex size-8 items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-700">
-                            {(user.name ?? user.username).charAt(0)}
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="truncate font-medium text-gray-900">
-                            {user.name ?? "—"}
-                          </p>
-                          <p className="truncate text-xs text-gray-500">
-                            @{user.username}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 text-gray-700" dir="ltr">
-                      {user.email ?? "—"}
-                    </td>
-                    <td className="px-3 py-3 text-gray-700" dir="ltr">
-                      {user.phone ?? "—"}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                        {getRoleLabel(user.role)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-gray-600">
-                      {(user.connections ?? [])
-                        .map((c) =>
-                          c.type === "telegram" ? "تيليغرام" : "ديسكورد",
-                        )
-                        .join(" · ") || "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <ManageAuthUsers
+          currentUserId={currentUser.id}
+          canEditRoles={canEditRoles}
+          users={users}
+        />
       </section>
 
       <section className="ds-card">
@@ -122,7 +61,7 @@ export default async function PanelUsersPage() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-right text-sm">
+            <table className="w-full min-w-180 text-right text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-gray-500">
                   <th className="px-3 py-2 font-medium">الاتصال</th>
@@ -179,7 +118,7 @@ export default async function PanelUsersPage() {
                         </span>
                       </td>
                       <td className="px-3 py-3 text-gray-700">
-                        {owner?.name ?? owner?.username ?? "—"}
+                        {owner?.name ?? "—"}
                       </td>
                       <td className="px-3 py-3 text-gray-600">
                         {formatDate(connection.authorized_at)}

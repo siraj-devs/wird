@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized - Invalid token");
 
-  const role = await getAuthUserRole(payload.userId);
+  const role = await getAuthUserRole(payload);
   if (!role || ![ROLES.OWNER].includes(role))
     throw new APIError(403, "Forbidden - Owner role required");
 
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized - Invalid token");
 
-  const role = await getAuthUserRole(payload.userId);
+  const role = await getAuthUserRole(payload);
   if (!role || ![ROLES.OWNER, ROLES.ADMIN].includes(role))
     throw new APIError(403, "Forbidden - Owner/Admin role required");
 
@@ -110,7 +110,7 @@ export async function DELETE(request: NextRequest) {
   const payload = verifyToken(token);
   if (!payload) throw new APIError(401, "Unauthorized - Invalid token");
 
-  const role = await getAuthUserRole(payload.userId);
+  const role = await getAuthUserRole(payload);
   if (!role || ![ROLES.OWNER].includes(role))
     throw new APIError(403, "Forbidden - Owner role required");
 

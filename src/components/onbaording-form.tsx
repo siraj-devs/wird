@@ -56,7 +56,7 @@ export default function OnboardingForm() {
         },
         body: JSON.stringify({
           fullName: fullName.trim(),
-          phoneNumber: "+212" + phoneNumber.replace(/\s/g, ""),
+          phoneNumber: "212" + phoneNumber.replace(/\s/g, ""),
           email: email.trim(),
         }),
       });
@@ -132,7 +132,7 @@ export default function OnboardingForm() {
           </label>
           <div dir="ltr" className="flex gap-2">
             <div className="flex items-center rounded-lg border border-gray-300 bg-gray-50 px-4 py-3">
-              <span className="text-gray-700">+212</span>
+              <span className="text-gray-700">212</span>
             </div>
             <input
               type="tel"

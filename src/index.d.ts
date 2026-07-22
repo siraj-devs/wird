@@ -4,7 +4,8 @@ declare global {
   type nullable<T> = T | null;
 
   interface JWTPayload {
-    userId: string;
+    connectionId: string;
+    userId?: string;
   }
 
   interface DiscordUser {
@@ -21,7 +22,8 @@ declare global {
 
   interface Session {
     id: string;
-    user_id: string;
+    connection_id: string;
+    user_id: nullable<string>;
     token: string;
     expires_at: string;
     created_at: string;
@@ -31,7 +33,7 @@ declare global {
 
   interface Connection {
     id: string;
-    user_id: string;
+    user_id: nullable<string>;
     name: string;
     username: string;
     avatar: nullable<string>;
@@ -49,7 +51,7 @@ declare global {
     created_at: string;
     updated_at: string;
     connections?: Connection[];
-    // Derived from primary connection / aliases for existing UI
+    // Derived from primary connection for display (username lives on Connection)
     username: string;
     provider_id: string;
     friend_id: nullable<string>;
