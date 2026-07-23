@@ -12,6 +12,7 @@ export {
   getProgramsWithDetails,
   getProgramTasks,
   getProgramWithDetails,
+  getUserProgramFriendsBoard,
   getUserPrograms,
   getUserProgramsProgress,
   getUserProgramTasksSections,

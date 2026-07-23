@@ -199,7 +199,9 @@ export default function ShowCategoriesWithTasks({
   const isEmpty = sectionsToRender.length === 0;
 
   return (
-    <div className={`flex flex-1 flex-col gap-8 ${hasProgramBanner ? "pt-4" : "pt-24"}`}>
+    <div
+      className={`flex flex-1 flex-col gap-8 ${hasProgramBanner ? "pt-4" : "pt-24"}`}
+    >
       {!canEditSelectedDate && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           هذا اليوم للعرض فقط. يمكن تسجيل المهام لليوم الحالي أو يوم أمس فقط.
@@ -235,15 +237,6 @@ export default function ShowCategoriesWithTasks({
                           الأسبوع {section.weekNumber}
                         </p>
                       )}
-                      {section.friendProgress &&
-                        section.friendProgress.length > 0 && (
-                          <p className="mt-1 text-xs text-primary-600">
-                            تقدم الأصدقاء:{" "}
-                            {section.friendProgress
-                              .map((f) => `${f.name} ${f.completed}/${f.total}`)
-                              .join(" · ")}
-                          </p>
-                        )}
                     </div>
                     {sectionTotal > 0 && (
                       <span
@@ -273,7 +266,7 @@ export default function ShowCategoriesWithTasks({
       )}
 
       {hasChanges && (
-        <div className="fixed right-0 max-w-3xl mx-auto bottom-0 left-0 z-50 flex justify-center mb-4 sm:mb-6">
+        <div className="fixed right-0 bottom-0 left-0 z-50 mx-auto mb-4 flex max-w-3xl justify-center sm:mb-6">
           <div className="w-full rounded-lg border border-gray-200 bg-white p-3 shadow-xs sm:px-6 sm:py-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">

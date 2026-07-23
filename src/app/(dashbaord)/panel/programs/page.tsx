@@ -10,14 +10,6 @@ export default async function Page() {
 
   return (
     <div className="ds-page">
-      <div className="mb-6">
-        <h1 className="ds-title">البرامج</h1>
-        <p className="ds-subtitle">
-          إدارة البرامج: الأعضاء، الأصدقاء، الفئات، والمهام (متكررة أو بفترة
-          زمنية).
-        </p>
-      </div>
-
       <ProgramList programs={programs} />
     </div>
   );

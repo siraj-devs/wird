@@ -73,7 +73,6 @@ export default async function Page({
         weekNumber: section.weekNumber,
         hasActiveWeek: section.hasActiveWeek,
         categories: section.categories,
-        friendProgress: section.friendProgress,
       }))
     : undefined;
 

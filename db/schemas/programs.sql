@@ -124,16 +124,25 @@ ALTER TABLE program_members ENABLE ROW LEVEL SECURITY;
 -- ============================================
 --    PROGRAM_FRIENDS
 -- ============================================
--- Ordered pair (user_a_id < user_b_id) so both see progress.
+-- Ordered pair (user_a_id < user_b_id).
+-- Members send requests (status=pending); receiver accepts → accepted.
+-- Only accepted pairs can see each other's progress.
 
 CREATE TABLE IF NOT EXISTS program_friends (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
   user_a_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   user_b_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  requester_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'accepted')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  responded_at TIMESTAMPTZ,
   CONSTRAINT check_program_friend_not_self CHECK (user_a_id <> user_b_id),
   CONSTRAINT check_program_friend_ordered CHECK (user_a_id < user_b_id),
+  CONSTRAINT check_program_friend_requester CHECK (
+    requester_id = user_a_id OR requester_id = user_b_id
+  ),
   CONSTRAINT unique_program_friendship UNIQUE (program_id, user_a_id, user_b_id)
 );
 
@@ -145,6 +154,12 @@ CREATE INDEX IF NOT EXISTS idx_program_friends_user_a
 
 CREATE INDEX IF NOT EXISTS idx_program_friends_user_b
   ON program_friends(program_id, user_b_id);
+
+CREATE INDEX IF NOT EXISTS idx_program_friends_status
+  ON program_friends(program_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_program_friends_requester
+  ON program_friends(program_id, requester_id);
 
 ALTER TABLE program_friends ENABLE ROW LEVEL SECURITY;
 

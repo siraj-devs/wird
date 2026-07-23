@@ -174,6 +174,7 @@ export async function getProgramMembers(
 
 export async function getProgramFriends(
   programId: string,
+  status?: ProgramFriendStatus,
 ): Promise<ProgramFriend[]> {
   try {
     const { data, error } = await supabaseNew
@@ -181,12 +182,28 @@ export async function getProgramFriends(
       .select("*")
       .eq("program_id", programId)
       .order("created_at", { ascending: true });
+
     if (error) throw error;
-    return (data ?? []) as ProgramFriend[];
+
+    const rows = (data ?? []) as ProgramFriend[];
+    if (!status) return rows;
+
+    // Treat missing/null status as accepted (pre-migration rows).
+    if (status === "accepted") {
+      return rows.filter((row) => isAcceptedFriendStatus(row.status));
+    }
+    return rows.filter((row) => row.status === status);
   } catch (error) {
     console.error(error);
     return [];
   }
+}
+
+/** Pending requests only; everything else (incl. legacy null) counts as accepted. */
+export function isAcceptedFriendStatus(
+  status: ProgramFriendStatus | null | undefined,
+): boolean {
+  return status !== "pending";
 }
 
 export async function getUserPrograms(userId: string): Promise<Program[]> {
@@ -211,14 +228,96 @@ export async function getUserPrograms(userId: string): Promise<Program[]> {
   }
 }
 
+export async function isProgramMember(
+  programId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabaseNew
+    .from("program_members")
+    .select("id")
+    .eq("program_id", programId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return !!data;
+}
+
+/** Accepted friends only — used for progress visibility. */
 export async function getFriendIdsInProgram(
   programId: string,
   userId: string,
 ): Promise<string[]> {
-  const friends = await getProgramFriends(programId);
+  const friends = await getProgramFriends(programId, "accepted");
   return friends
     .filter((f) => f.user_a_id === userId || f.user_b_id === userId)
     .map((f) => (f.user_a_id === userId ? f.user_b_id : f.user_a_id));
+}
+
+export function otherFriendUserId(
+  friendship: ProgramFriend,
+  userId: string,
+): string {
+  return friendship.user_a_id === userId
+    ? friendship.user_b_id
+    : friendship.user_a_id;
+}
+
+export async function getUserProgramFriendsBoard(
+  userId: string,
+): Promise<ProgramFriendsBoard[]> {
+  const programs = await getUserPrograms(userId);
+  const boards: ProgramFriendsBoard[] = [];
+
+  for (const program of programs) {
+    const [members, friendships] = await Promise.all([
+      getProgramMembers(program.id),
+      getProgramFriends(program.id),
+    ]);
+
+    const memberUsers = members
+      .map((m) => m.user)
+      .filter((u): u is User => !!u)
+      .filter((u) => u.id !== userId);
+
+    const usersById = new Map(
+      members
+        .map((m) => m.user)
+        .filter((u): u is User => !!u)
+        .map((u) => [u.id, u]),
+    );
+
+    const annotate = (f: ProgramFriend) => {
+      const other_user_id = otherFriendUserId(f, userId);
+      return {
+        ...f,
+        other_user_id,
+        other_user: usersById.get(other_user_id),
+      };
+    };
+
+    const mine = friendships.filter(
+      (f) => f.user_a_id === userId || f.user_b_id === userId,
+    );
+
+    boards.push({
+      program,
+      members: memberUsers,
+      accepted: mine
+        .filter((f) => isAcceptedFriendStatus(f.status))
+        .map(annotate),
+      incoming: mine
+        .filter(
+          (f) => f.status === "pending" && f.requester_id !== userId,
+        )
+        .map(annotate),
+      outgoing: mine
+        .filter(
+          (f) => f.status === "pending" && f.requester_id === userId,
+        )
+        .map(annotate),
+    });
+  }
+
+  return boards;
 }
 
 export async function getProgramWithDetails(
@@ -232,7 +331,7 @@ export async function getProgramWithDetails(
       getProgramMembers(programId),
       getProgramCategories(programId),
       getProgramTasks(programId),
-      getProgramFriends(programId),
+      getProgramFriends(programId), // all statuses for admin visibility
     ]);
 
     return { program, members, categories, tasks, friends };
@@ -293,39 +392,6 @@ export async function getUserProgramTasksSections(
         .map((c) => [c.program_task_id, c]),
     );
 
-    const friendProgress: UserProgramFriendProgress[] = [];
-    for (const friendId of friendIds) {
-      const friendDone = completionRows.filter(
-        (c) => c.user_id === friendId,
-      ).length;
-
-      const { data: friendUser } = await supabaseNew
-        .from("users")
-        .select("name, connections(username, accessed_at)")
-        .eq("id", friendId)
-        .maybeSingle();
-
-      const connections = Array.isArray(friendUser?.connections)
-        ? friendUser.connections
-        : friendUser?.connections
-          ? [friendUser.connections]
-          : [];
-      const primary = [...connections].sort(
-        (a: { accessed_at: string }, b: { accessed_at: string }) =>
-          new Date(b.accessed_at).getTime() - new Date(a.accessed_at).getTime(),
-      )[0] as { username?: string } | undefined;
-
-      friendProgress.push({
-        user_id: friendId,
-        name:
-          (friendUser?.name as string | null) ??
-          primary?.username ??
-          "صديق",
-        completed: friendDone,
-        total: activeTasks.length,
-      });
-    }
-
     const userTasks: UserTask[] = activeTasks.map((task) => {
       const completion = myCompletions.get(task.id);
       return {
@@ -361,7 +427,6 @@ export async function getUserProgramTasksSections(
       hasActiveWeek: true,
       categories,
       tasks: userTasks,
-      friendProgress,
     });
   }
 
@@ -496,6 +561,67 @@ async function resolveUserDisplayName(userId: string): Promise<string> {
   );
 }
 
+function buildProgressForUser(params: {
+  userId: string;
+  name: string;
+  tasks: (ProgramTask & { category?: ProgramCategory })[];
+  dateKeys: string[];
+  completionRows: ProgramTaskCompletion[];
+}): ProgramFriendDetailedProgress {
+  const { userId, name, tasks, dateKeys, completionRows } = params;
+
+  const completedSet = new Set(
+    completionRows
+      .filter((row) => row.user_id === userId)
+      .map((row) => `${row.program_task_id}:${row.completed_on}`),
+  );
+
+  const taskRows: ProgramTaskProgressRow[] = tasks
+    .map((task) => {
+      const assignedKeys = dateKeys.filter((dateKey) =>
+        isProgramTaskActiveOnDate(task, dateKey),
+      );
+      const completedKeys = assignedKeys.filter((dateKey) =>
+        completedSet.has(`${task.id}:${dateKey}`),
+      );
+      return {
+        task,
+        assignedKeys,
+        completedKeys,
+        assignedCount: assignedKeys.length,
+        completedCount: completedKeys.length,
+      };
+    })
+    .filter((row) => row.assignedCount > 0);
+
+  const completed = taskRows.reduce((sum, row) => sum + row.completedCount, 0);
+  const total = taskRows.reduce((sum, row) => sum + row.assignedCount, 0);
+
+  const daily: ProgramDailyProgress[] = dateKeys.map((dateKey) => {
+    const dayTasks = tasks.filter((task) =>
+      isProgramTaskActiveOnDate(task, dateKey),
+    );
+    const dayCompleted = dayTasks.filter((task) =>
+      completedSet.has(`${task.id}:${dateKey}`),
+    ).length;
+    return {
+      dateKey,
+      completed: dayCompleted,
+      total: dayTasks.length,
+    };
+  });
+
+  return {
+    user_id: userId,
+    name,
+    tasks: taskRows,
+    completed,
+    total,
+    percent: total > 0 ? Math.round((completed / total) * 100) : 0,
+    daily,
+  };
+}
+
 export async function getUserProgramsProgress(
   userId: string,
   range: ProgramProgressRange,
@@ -516,113 +642,61 @@ export async function getUserProgramsProgress(
       getFriendIdsInProgram(program.id, userId),
     ]);
 
-    if (tasks.length === 0) {
-      sections.push({
-        program,
-        tasks: [],
-        completed: 0,
-        total: 0,
-        percent: 0,
-        daily: range.dateKeys.map((dateKey) => ({
-          dateKey,
-          completed: 0,
-          total: 0,
-        })),
-        friendProgress: [],
-      });
-      continue;
-    }
-
     const taskIds = tasks.map((task) => task.id);
     const trackedUserIds = [userId, ...friendIds];
 
-    const { data: completions } = await supabaseNew
-      .from("program_task_completions")
-      .select("*")
-      .in("program_task_id", taskIds)
-      .in("user_id", trackedUserIds)
-      .gte("completed_on", range.startDate)
-      .lte("completed_on", range.endDate);
+    let completionRows: ProgramTaskCompletion[] = [];
+    if (taskIds.length > 0) {
+      const { data: completions } = await supabaseNew
+        .from("program_task_completions")
+        .select("*")
+        .in("program_task_id", taskIds)
+        .in("user_id", trackedUserIds)
+        .gte("completed_on", range.startDate)
+        .lte("completed_on", range.endDate);
 
-    const completionRows = (completions ?? []) as ProgramTaskCompletion[];
-
-    const myCompleted = new Set(
-      completionRows
-        .filter((row) => row.user_id === userId)
-        .map((row) => `${row.program_task_id}:${row.completed_on}`),
-    );
-
-    const taskRows: ProgramTaskProgressRow[] = tasks.map((task) => {
-      const assignedKeys = range.dateKeys.filter((dateKey) =>
-        isProgramTaskActiveOnDate(task, dateKey),
-      );
-      const completedKeys = assignedKeys.filter((dateKey) =>
-        myCompleted.has(`${task.id}:${dateKey}`),
-      );
-      return {
-        task,
-        assignedKeys,
-        completedKeys,
-        assignedCount: assignedKeys.length,
-        completedCount: completedKeys.length,
-      };
-    });
-
-    const visibleTasks = taskRows.filter((row) => row.assignedCount > 0);
-    const completed = visibleTasks.reduce(
-      (sum, row) => sum + row.completedCount,
-      0,
-    );
-    const total = visibleTasks.reduce((sum, row) => sum + row.assignedCount, 0);
-
-    const daily: ProgramDailyProgress[] = range.dateKeys.map((dateKey) => {
-      const dayTasks = tasks.filter((task) =>
-        isProgramTaskActiveOnDate(task, dateKey),
-      );
-      const dayCompleted = dayTasks.filter((task) =>
-        myCompleted.has(`${task.id}:${dateKey}`),
-      ).length;
-      return {
-        dateKey,
-        completed: dayCompleted,
-        total: dayTasks.length,
-      };
-    });
-
-    const friendProgress: UserProgramFriendProgress[] = [];
-    for (const friendId of friendIds) {
-      const friendDone = new Set(
-        completionRows
-          .filter((row) => row.user_id === friendId)
-          .map((row) => `${row.program_task_id}:${row.completed_on}`),
-      );
-
-      let friendCompleted = 0;
-      let friendTotal = 0;
-      for (const task of tasks) {
-        for (const dateKey of range.dateKeys) {
-          if (!isProgramTaskActiveOnDate(task, dateKey)) continue;
-          friendTotal += 1;
-          if (friendDone.has(`${task.id}:${dateKey}`)) friendCompleted += 1;
-        }
-      }
-
-      friendProgress.push({
-        user_id: friendId,
-        name: await resolveUserDisplayName(friendId),
-        completed: friendCompleted,
-        total: friendTotal,
-      });
+      completionRows = (completions ?? []) as ProgramTaskCompletion[];
     }
+
+    const mine = buildProgressForUser({
+      userId,
+      name: "أنا",
+      tasks,
+      dateKeys: range.dateKeys,
+      completionRows,
+    });
+
+    const friendSections: ProgramFriendDetailedProgress[] = [];
+    for (const friendId of friendIds) {
+      friendSections.push(
+        buildProgressForUser({
+          userId: friendId,
+          name: await resolveUserDisplayName(friendId),
+          tasks,
+          dateKeys: range.dateKeys,
+          completionRows,
+        }),
+      );
+    }
+
+    const friendProgress: UserProgramFriendProgress[] = friendSections.map(
+      (friend) => ({
+        user_id: friend.user_id,
+        name: friend.name,
+        completed: friend.completed,
+        total: friend.total,
+      }),
+    );
 
     sections.push({
       program,
-      tasks: visibleTasks,
-      completed,
-      total,
-      percent: total > 0 ? Math.round((completed / total) * 100) : 0,
-      daily,
+      tasks: mine.tasks,
+      completed: mine.completed,
+      total: mine.total,
+      percent: mine.percent,
+      daily: mine.daily,
       friendProgress,
+      friendSections,
     });
   }
 

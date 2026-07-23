@@ -2,11 +2,16 @@
 
 import type { ProgramDetails } from "@/lib/programs";
 import { getRoleLabel, ROLES } from "@/lib/roles";
-import { PlusIcon, TrashIcon, XIcon } from "@phosphor-icons/react";
+import {
+  PencilSimpleIcon,
+  PlusIcon,
+  TrashIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import AddProgramCategoryForm from "./add-program-category-form";
 import AddProgramTaskForm from "./add-program-task-form";
 import ManageProgramCategories from "./manage-program-categories";
@@ -36,20 +41,24 @@ export default function ManageProgramDetail({
   users: User[];
 }) {
   const router = useRouter();
-  const { program, members, categories, tasks, friends } = programDetails;
+  const { program, members, categories, tasks } = programDetails;
 
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [addingMembers, setAddingMembers] = useState(false);
   const [memberError, setMemberError] = useState("");
 
-  const [showAddFriend, setShowAddFriend] = useState(false);
-  const [friendUserId, setFriendUserId] = useState("");
-  const [friendOtherId, setFriendOtherId] = useState("");
-  const [addingFriend, setAddingFriend] = useState(false);
-  const [friendError, setFriendError] = useState("");
+  const [showEdit, setShowEdit] = useState(false);
+  const [editName, setEditName] = useState(program.name);
+  const [editDescription, setEditDescription] = useState(
+    program.description ?? "",
+  );
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState("");
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingProgram, setDeletingProgram] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const usersById = useMemo(
     () => new Map(users.map((user) => [user.id, user])),
@@ -73,17 +82,49 @@ export default function ManageProgramDetail({
     [users, memberIdSet],
   );
 
-  const memberUsers = useMemo(
-    () => members.map((m) => m.user).filter((u): u is User => !!u),
-    [members],
-  );
-
   const displayName = (user?: User) =>
     user?.name ?? user?.full_name ?? user?.username ?? "—";
 
-  const deleteProgram = async () => {
-    if (!confirm("هل أنت متأكد من حذف هذا البرنامج؟")) return;
+  const openEdit = () => {
+    setEditName(program.name);
+    setEditDescription(program.description ?? "");
+    setEditError("");
+    setShowEdit(true);
+  };
+
+  const saveEdit = async (e: FormEvent) => {
+    e.preventDefault();
+    const name = editName.trim();
+    if (!name) {
+      setEditError("الرجاء إدخال اسم البرنامج");
+      return;
+    }
+
+    setSaving(true);
+    setEditError("");
+    try {
+      const response = await fetch(`/api/programs/${program.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          description: editDescription.trim() || null,
+        }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(data.error || "فشل تعديل البرنامج");
+      setShowEdit(false);
+      router.refresh();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "حدث خطأ");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
     setDeletingProgram(true);
+    setDeleteError("");
     try {
       const response = await fetch(`/api/programs/${program.id}`, {
         method: "DELETE",
@@ -95,7 +136,7 @@ export default function ManageProgramDetail({
       router.push("/panel/programs");
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "حدث خطأ");
+      setDeleteError(err instanceof Error ? err.message : "حدث خطأ");
     } finally {
       setDeletingProgram(false);
     }
@@ -145,81 +186,59 @@ export default function ManageProgramDetail({
     }
   };
 
-  const addFriend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFriendError("");
-    if (!friendUserId || !friendOtherId) {
-      setFriendError("الرجاء اختيار العضوين");
-      return;
-    }
-    setAddingFriend(true);
-    try {
-      const response = await fetch(`/api/programs/${program.id}/friends`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: friendUserId,
-          friend_id: friendOtherId,
-        }),
-      });
-      if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        throw new Error(data.error || "فشل إضافة الصداقة");
-      }
-      setFriendUserId("");
-      setFriendOtherId("");
-      setShowAddFriend(false);
-      router.refresh();
-    } catch (err) {
-      setFriendError(err instanceof Error ? err.message : "حدث خطأ");
-    } finally {
-      setAddingFriend(false);
-    }
-  };
-
-  const removeFriend = async (friendshipId: string) => {
-    try {
-      const response = await fetch(
-        `/api/programs/${program.id}/friends?friendship_id=${friendshipId}`,
-        { method: "DELETE" },
-      );
-      if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        throw new Error(data.error || "فشل حذف الصداقة");
-      }
-      router.refresh();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "حدث خطأ");
-    }
-  };
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link
-            href="/panel/programs"
-            className="text-sm text-gray-500 hover:text-primary-500"
-          >
-            ← البرامج
-          </Link>
-          <h1 className="mt-1 font-kufam text-2xl font-bold text-gray-900">
-            {program.name}
-          </h1>
-          {program.description && (
-            <p className="mt-1 text-sm text-gray-500">{program.description}</p>
-          )}
+      <section className="ds-card">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <Link
+              href="/panel/programs"
+              className="text-sm text-gray-500 hover:text-primary-600"
+            >
+              ← البرامج
+            </Link>
+            <h1 className="mt-2 font-kufam text-2xl font-bold text-gray-900">
+              {program.name}
+            </h1>
+            {program.description ? (
+              <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                {program.description}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-gray-400">بدون وصف</p>
+            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="ds-badge">{members.length} أعضاء</span>
+              <span className="ds-badge">{categories.length} فئات</span>
+              <span className="ds-badge">{tasks.length} مهام</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={openEdit}
+              className="gap-2"
+            >
+              <PencilSimpleIcon size={18} />
+              تعديل
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => {
+                setDeleteError("");
+                setShowDeleteConfirm(true);
+              }}
+              className="gap-2"
+            >
+              <TrashIcon size={18} />
+              حذف
+            </Button>
+          </div>
         </div>
-        <Button
-          variant="danger"
-          onClick={deleteProgram}
-          disabled={deletingProgram}
-          className="gap-2"
-        >
-          <TrashIcon size={18} />
-          حذف البرنامج
-        </Button>
-      </div>
+      </section>
 
       {/* Members */}
       <section className="ds-card">
@@ -244,7 +263,7 @@ export default function ManageProgramDetail({
             return (
               <div
                 key={member.id}
-                className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2"
+                className="flex items-center gap-2 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2"
               >
                 {user?.avatar_url ? (
                   <Image
@@ -284,53 +303,6 @@ export default function ManageProgramDetail({
             <p className="text-sm text-gray-500">لا يوجد أعضاء بعد</p>
           )}
         </div>
-      </section>
-
-      {/* Friends */}
-      <section className="ds-card">
-        <div className="ds-section-header mb-4 flex-row">
-          <div>
-            <h2 className="ds-title">الأصدقاء داخل البرنامج</h2>
-            <p className="ds-subtitle">
-              يمكن للأصدقاء مشاهدة تقدم بعضهم في هذا البرنامج
-            </p>
-          </div>
-          <Button
-            type="button"
-            onClick={() => setShowAddFriend(true)}
-            className="p-2!"
-            disabled={memberUsers.length < 2}
-          >
-            <PlusIcon size={18} />
-          </Button>
-        </div>
-
-        <ul className="space-y-2">
-          {friends.map((f) => {
-            const a = usersById.get(f.user_a_id);
-            const b = usersById.get(f.user_b_id);
-            return (
-              <li
-                key={f.id}
-                className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2 text-sm"
-              >
-                <span>
-                  {displayName(a)} ↔ {displayName(b)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => removeFriend(f.id)}
-                  className="text-gray-400 hover:text-red-500"
-                >
-                  <TrashIcon size={16} />
-                </button>
-              </li>
-            );
-          })}
-          {friends.length === 0 && (
-            <p className="text-sm text-gray-500">لا توجد صداقات بعد</p>
-          )}
-        </ul>
       </section>
 
       {/* Categories + Tasks (panel layout) */}
@@ -447,80 +419,99 @@ export default function ManageProgramDetail({
         </div>
       )}
 
-      {/* Friend modal */}
-      {showAddFriend && (
+      {/* Edit program modal */}
+      {showEdit && (
         <div className="ds-modal-overlay">
           <div className="ds-modal">
             <h3 className="mb-4 text-xl font-bold text-gray-900">
-              ربط صديقين في البرنامج
+              تعديل البرنامج
             </h3>
-            {friendError && (
+            {editError && (
               <div className="ds-error mb-4">
-                <p className="text-sm">{friendError}</p>
+                <p className="text-sm">{editError}</p>
               </div>
             )}
-            <form onSubmit={addFriend} className="space-y-4">
+            <form onSubmit={saveEdit} className="space-y-4">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  العضو
+                  اسم البرنامج <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={friendUserId}
-                  onChange={(e) => setFriendUserId(e.target.value)}
-                  className="ds-select"
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="أدخل اسم البرنامج"
                   required
-                >
-                  <option value="">اختر</option>
-                  {memberUsers.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {displayName(u)}
-                    </option>
-                  ))}
-                </select>
+                  className="ds-input"
+                  autoFocus
+                />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  الصديق
+                  الوصف
                 </label>
-                <select
-                  value={friendOtherId}
-                  onChange={(e) => setFriendOtherId(e.target.value)}
-                  className="ds-select"
-                  required
-                >
-                  <option value="">اختر</option>
-                  {memberUsers
-                    .filter((u) => u.id !== friendUserId)
-                    .map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {displayName(u)}
-                      </option>
-                    ))}
-                </select>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="وصف اختياري للبرنامج"
+                  rows={3}
+                  className="ds-input resize-none"
+                />
               </div>
               <div className="flex gap-3 pt-2">
-                <Button
-                  type="submit"
-                  disabled={addingFriend}
-                  className="flex-1"
-                >
-                  {addingFriend ? "جاري الربط..." : "ربط"}
+                <Button type="submit" disabled={saving} className="flex-1">
+                  {saving ? "جاري الحفظ..." : "حفظ التعديلات"}
                 </Button>
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled={addingFriend}
-                  onClick={() => {
-                    setShowAddFriend(false);
-                    setFriendUserId("");
-                    setFriendOtherId("");
-                    setFriendError("");
-                  }}
+                  disabled={saving}
+                  onClick={() => setShowEdit(false)}
                 >
                   إلغاء
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirm modal */}
+      {showDeleteConfirm && (
+        <div className="ds-modal-overlay">
+          <div className="ds-modal">
+            <h3 className="mb-2 text-xl font-bold text-gray-900">
+              تأكيد حذف البرنامج
+            </h3>
+            <p className="mb-4 text-sm text-gray-600">
+              هل أنت متأكد من حذف البرنامج{" "}
+              <span className="font-semibold text-gray-900">
+                «{program.name}»
+              </span>
+              ؟ لا يمكن التراجع عن هذا الإجراء.
+            </p>
+            {deleteError && (
+              <div className="ds-error mb-4">
+                <p className="text-sm">{deleteError}</p>
+              </div>
+            )}
+            <div className="flex gap-3">
+              <Button
+                variant="danger"
+                disabled={deletingProgram}
+                onClick={confirmDelete}
+                className="flex-1 gap-2"
+              >
+                <TrashIcon size={16} />
+                {deletingProgram ? "جاري الحذف..." : "نعم، احذف"}
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={deletingProgram}
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                إلغاء
+              </Button>
+            </div>
           </div>
         </div>
       )}

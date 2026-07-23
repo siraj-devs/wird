@@ -3,10 +3,9 @@ import {
   CalendarBlankIcon,
   CaretLeftIcon,
   CaretRightIcon,
-  CheckIcon,
   ChartLineUpIcon,
+  CheckIcon,
   SmileyMehIcon,
-  SparkleIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 
@@ -72,12 +71,8 @@ export default function ProgramProgressView({
         />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-800">
-              <SparkleIcon size={14} weight="fill" />
-              التقدم
-            </div>
             <h1 className="font-kufam text-2xl font-bold text-gray-900">
-              تقدمي في البرامج
+              التقدم
             </h1>
             <p className="mt-1 text-sm text-gray-500">
               تابع إنجازك الأسبوعي أو الشهري في كل برنامج
@@ -86,7 +81,11 @@ export default function ProgramProgressView({
 
           {hasPrograms && overallTotal > 0 && (
             <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white/80 px-4 py-3 shadow-sm">
-              <ProgressRing percent={overallPercent} size={52} strokeWidth={5} />
+              <ProgressRing
+                percent={overallPercent}
+                size={52}
+                strokeWidth={5}
+              />
               <div>
                 <p className="text-xs text-gray-500">الإجمالي</p>
                 <p className="text-sm font-semibold text-gray-900">
@@ -162,22 +161,65 @@ export default function ProgramProgressView({
         </Link>
       </div>
 
-      {!hasPrograms && (
-        <EmptyState message="لست عضواً في أي برنامج بعد." />
-      )}
+      {!hasPrograms && <EmptyState message="لست عضواً في أي برنامج بعد." />}
 
       {hasPrograms && sections.length === 0 && (
         <EmptyState message="لا توجد بيانات في هذه الفترة." />
       )}
 
       {sections.map((section) => (
-        <ProgramProgressCard
-          key={section.program.id}
-          section={section}
-          range={range}
-          isWeek={isWeek}
-          todayKey={todayKey}
-        />
+        <div key={section.program.id} className="space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-2 px-1">
+            <div>
+              <h2 className="font-kufam text-xl font-bold text-gray-900">
+                {section.program.name}
+              </h2>
+              {section.program.description && (
+                <p className="text-sm text-gray-500">
+                  {section.program.description}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <ProgressPersonCard
+            title="تقدمي"
+            subtitle={
+              isWeek ? "إنجازي خلال هذا الأسبوع" : "إنجازي خلال هذا الشهر"
+            }
+            percent={section.percent}
+            completed={section.completed}
+            total={section.total}
+            tasks={section.tasks}
+            daily={section.daily}
+            dateKeys={range.dateKeys}
+            isWeek={isWeek}
+            todayKey={todayKey}
+            accent="mine"
+          />
+
+          {(section.friendSections ?? []).map((friend) => (
+            <ProgressPersonCard
+              key={friend.user_id}
+              title={`تقدم ${friend.name}`}
+              subtitle={
+                isWeek
+                  ? "إنجاز الصديق خلال هذا الأسبوع"
+                  : "إنجاز الصديق خلال هذا الشهر"
+              }
+              percent={friend.percent}
+              completed={friend.completed}
+              total={friend.total}
+              tasks={friend.tasks}
+              daily={friend.daily}
+              dateKeys={range.dateKeys}
+              isWeek={isWeek}
+              todayKey={todayKey}
+              accent="friend"
+              friendName={friend.name}
+            />
+          ))}
+        </div>
       ))}
     </div>
   );
@@ -242,43 +284,59 @@ function ProgressRing({
   );
 }
 
-function ProgramProgressCard({
-  section,
-  range,
+function ProgressPersonCard({
+  title,
+  subtitle,
+  percent,
+  completed,
+  total,
+  tasks,
+  daily,
+  dateKeys,
   isWeek,
   todayKey,
+  accent,
+  friendName,
 }: {
-  section: ProgramProgressSection;
-  range: ProgramProgressRange;
+  title: string;
+  subtitle: string;
+  percent: number;
+  completed: number;
+  total: number;
+  tasks: ProgramTaskProgressRow[];
+  daily: ProgramDailyProgress[];
+  dateKeys: string[];
   isWeek: boolean;
   todayKey: string;
+  accent: "mine" | "friend";
+  friendName?: string;
 }) {
-  const tone = achievementTone(section.percent);
+  const tone = achievementTone(percent);
 
   return (
-    <section className="ds-card space-y-5">
+    <section
+      className={`ds-card space-y-5 ${
+        accent === "friend" ? "border-primary-100 bg-primary-50/20" : ""
+      }`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <ProgressRing percent={section.percent} />
+          <ProgressRing percent={percent} />
           <div>
-            <h3 className="text-lg font-bold text-gray-900">
-              {section.program.name}
-            </h3>
-            {section.program.description && (
-              <p className="mt-0.5 text-sm text-gray-500">
-                {section.program.description}
-              </p>
-            )}
+            <div className="mb-1 flex items-center gap-2">
+              {accent === "friend" && friendName && (
+                <span className="grid size-7 place-items-center rounded-full bg-primary-100 text-xs font-bold text-primary-800">
+                  {initial(friendName)}
+                </span>
+              )}
+              <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+            </div>
+            <p className="text-xs text-gray-500">{subtitle}</p>
             <p className="mt-1 text-xs text-gray-500">
-              أكملت{" "}
-              <span className="font-semibold text-gray-800">
-                {section.completed}
-              </span>{" "}
+              أكمل{" "}
+              <span className="font-semibold text-gray-800">{completed}</span>{" "}
               من أصل{" "}
-              <span className="font-semibold text-gray-800">
-                {section.total}
-              </span>{" "}
-              {isWeek ? "خلال هذا الأسبوع" : "خلال هذا الشهر"}
+              <span className="font-semibold text-gray-800">{total}</span>
             </p>
           </div>
         </div>
@@ -286,67 +344,40 @@ function ProgramProgressCard({
         <span
           className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${tone.badge}`}
         >
-          {section.percent}%
+          {percent}%
         </span>
       </div>
 
       <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
         <div
           className={`h-2 rounded-full transition-all ${tone.bar}`}
-          style={{ width: `${Math.min(100, section.percent)}%` }}
+          style={{ width: `${Math.min(100, percent)}%` }}
         />
       </div>
 
-      {section.friendProgress.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {section.friendProgress.map((friend) => {
-            const percent =
-              friend.total > 0
-                ? Math.round((friend.completed / friend.total) * 100)
-                : 0;
-            return (
-              <div
-                key={friend.user_id}
-                className="flex items-center gap-2 rounded-full border border-gray-100 bg-gray-50 py-1.5 pl-3 pr-1.5"
-              >
-                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary-100 text-[11px] font-bold text-primary-800">
-                  {initial(friend.name)}
-                </span>
-                <span className="text-xs font-medium text-gray-700">
-                  {friend.name}
-                </span>
-                <span className="text-xs text-gray-400">
-                  {friend.completed}/{friend.total} · {percent}%
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
       {isWeek ? (
         <WeekProgressGrid
-          section={section}
-          dateKeys={range.dateKeys}
+          tasks={tasks}
+          dateKeys={dateKeys}
           todayKey={todayKey}
         />
       ) : (
-        <MonthProgressSummary section={section} todayKey={todayKey} />
+        <MonthProgressSummary tasks={tasks} daily={daily} todayKey={todayKey} />
       )}
     </section>
   );
 }
 
 function WeekProgressGrid({
-  section,
+  tasks,
   dateKeys,
   todayKey,
 }: {
-  section: ProgramProgressSection;
+  tasks: ProgramTaskProgressRow[];
   dateKeys: string[];
   todayKey: string;
 }) {
-  if (section.tasks.length === 0) {
+  if (tasks.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
         لا توجد مهام مجدولة في هذا الأسبوع.
@@ -355,7 +386,7 @@ function WeekProgressGrid({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-100">
+    <div className="overflow-x-auto rounded-xl border border-gray-100 bg-white">
       <div className="min-w-190">
         <div className="grid grid-cols-[minmax(160px,2fr)_repeat(7,minmax(44px,1fr))_minmax(52px,0.7fr)] gap-2 border-b border-gray-100 bg-gray-50 p-3">
           <div />
@@ -386,7 +417,7 @@ function WeekProgressGrid({
         </div>
 
         <div className="divide-y divide-gray-50">
-          {section.tasks.map((row) => {
+          {tasks.map((row) => {
             const assigned = new Set(row.assignedKeys);
             const completed = new Set(row.completedKeys);
 
@@ -445,18 +476,20 @@ function WeekProgressGrid({
 }
 
 function MonthProgressSummary({
-  section,
+  tasks,
+  daily,
   todayKey,
 }: {
-  section: ProgramProgressSection;
+  tasks: ProgramTaskProgressRow[];
+  daily: ProgramDailyProgress[];
   todayKey: string;
 }) {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
         <div className="overflow-x-auto">
-          <div className="flex min-w-max items-end gap-3">
-            {section.daily.map((day) => {
+          <div className="flex min-w-max items-end gap-1.5">
+            {daily.map((day) => {
               const ratio =
                 day.total > 0
                   ? Math.round((day.completed / day.total) * 100)
@@ -465,10 +498,10 @@ function MonthProgressSummary({
               return (
                 <div
                   key={day.dateKey}
-                  className="flex w-12 flex-col items-center gap-1"
+                  className="flex w-7 flex-col items-center gap-1"
                   title={`${day.dateKey}: ${day.completed}/${day.total}`}
                 >
-                  <div className="flex h-24 w-full items-end overflow-hidden justify-center rounded-full bg-gray-100">
+                  <div className="flex h-16 w-full items-end justify-center rounded-full bg-gray-100">
                     <div
                       className={`w-full rounded-full transition-all ${
                         day.total === 0
@@ -481,15 +514,13 @@ function MonthProgressSummary({
                       }`}
                       style={{
                         height:
-                          day.total === 0 ? "10%" : `${Math.max(ratio, 5)}%`,
+                          day.total === 0 ? "10%" : `${Math.max(ratio, 10)}%`,
                       }}
                     />
                   </div>
                   <span
                     className={`text-[10px] ${
-                      isToday
-                        ? "font-bold text-primary-600"
-                        : "text-gray-400"
+                      isToday ? "font-bold text-primary-600" : "text-gray-400"
                     }`}
                   >
                     {dayNumber(day.dateKey)}
@@ -501,19 +532,22 @@ function MonthProgressSummary({
         </div>
       </div>
 
-      {section.tasks.length === 0 ? (
+      {tasks.length === 0 ? (
         <p className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
           لا توجد مهام مجدولة في هذا الشهر.
         </p>
       ) : (
-        <ul className="divide-y divide-gray-50 rounded-xl border border-gray-100">
-          {section.tasks.map((row) => {
+        <ul className="divide-y divide-gray-50 rounded-xl border border-gray-100 bg-white">
+          {tasks.map((row) => {
             const percent =
               row.assignedCount > 0
                 ? Math.round((row.completedCount / row.assignedCount) * 100)
                 : 0;
             return (
-              <li key={row.task.id} className="flex items-center gap-3 px-4 py-3">
+              <li
+                key={row.task.id}
+                className="flex items-center gap-3 px-4 py-3"
+              >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate text-sm font-medium text-gray-900">

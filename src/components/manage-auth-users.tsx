@@ -149,12 +149,27 @@ export default function ManageAuthUsers({
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-3 text-gray-600">
-                  {(user.connections ?? [])
-                    .map((c) =>
-                      c.type === "telegram" ? "تيليغرام" : "ديسكورد",
-                    )
-                    .join(" · ") || "—"}
+                <td className="px-3 py-3">
+                  {(user.connections ?? []).length === 0 ? (
+                    <span className="text-gray-400">—</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {(user.connections ?? []).map((connection) => (
+                        <span
+                          key={connection.id}
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            connection.type === "telegram"
+                              ? "bg-sky-50 text-sky-700"
+                              : "bg-indigo-50 text-indigo-700"
+                          }`}
+                        >
+                          {connection.type === "telegram"
+                            ? "تيليغرام"
+                            : "ديسكورد"}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </td>
               </tr>
             );

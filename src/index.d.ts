@@ -166,12 +166,44 @@ declare global {
     joined_at: string;
   }
 
+  type ProgramFriendStatus = "pending" | "accepted";
+
   interface ProgramFriend {
     id: string;
     program_id: string;
     user_a_id: string;
     user_b_id: string;
+    requester_id: string;
+    status: ProgramFriendStatus;
     created_at: string;
+    responded_at: nullable<string>;
+  }
+
+  interface ProgramFriendDetailedProgress {
+    user_id: string;
+    name: string;
+    tasks: ProgramTaskProgressRow[];
+    completed: number;
+    total: number;
+    percent: number;
+    daily: ProgramDailyProgress[];
+  }
+
+  interface ProgramFriendsBoard {
+    program: Program;
+    members: User[];
+    accepted: (ProgramFriend & {
+      other_user_id: string;
+      other_user?: User;
+    })[];
+    incoming: (ProgramFriend & {
+      other_user_id: string;
+      other_user?: User;
+    })[];
+    outgoing: (ProgramFriend & {
+      other_user_id: string;
+      other_user?: User;
+    })[];
   }
 
   interface ProgramTaskCompletion {
@@ -252,7 +284,9 @@ declare global {
     total: number;
     percent: number;
     daily: ProgramDailyProgress[];
+    /** @deprecated prefer friendSections for full separate progress */
     friendProgress: UserProgramFriendProgress[];
+    friendSections: ProgramFriendDetailedProgress[];
   }
 }
 

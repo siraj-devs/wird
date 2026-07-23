@@ -89,35 +89,31 @@ export default function UserDropdown({
               </p>
             </div>
 
-            <nav className="flex flex-col text-sm text-gray-700 *:px-3 *:py-2 *:text-right *:hover:bg-gray-50">
-              <button
-                type="button"
-                onClick={() => navigateTo("/profile")}
-                className="cursor-pointer text-right"
-              >
-                الملف الشخصي
-              </button>
+            <nav className="flex flex-col text-sm text-gray-700">
               {hasRole(user, ["owner", "admin", "member"]) && (
-                <>
+                <div className="flex flex-col  border-b border-gray-200 *:px-3 *:py-2 *:text-right *:hover:bg-gray-50">
                   <button
                     type="button"
                     onClick={() => navigateTo("/tasks")}
-                    className="cursor-pointer text-right"
                   >
-                    متابعة مهامي
+                    المهام
                   </button>
                   <button
                     type="button"
                     onClick={() => navigateTo("/progress")}
-                    className="cursor-pointer text-right"
                   >
-                    تقدمي في البرامج
+                    التقدم
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo("/friends")}
+                  >
+                    الأصدقاء
                   </button>
                   {FEEDBACK_ENABLED && (
                     <button
                       type="button"
                       onClick={() => navigateTo("/feedback")}
-                      className="cursor-pointer text-right"
                     >
                       تقييم الرحلة
                     </button>
@@ -131,34 +127,29 @@ export default function UserDropdown({
                       متابعة الصديق
                     </button>
                   )}
-                  {canTrackMembers && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsOpen(false);
-                        setIsMembersModalOpen(true);
-                      }}
-                      className="cursor-pointer text-right"
-                    >
-                      متابعة الأعضاء
-                    </button>
-                  )}
                   {hasRole(user, ["owner"]) && (
                     <>
                       <button
                         type="button"
                         onClick={() => navigateTo("/panel")}
                       >
-                        إدارة المهام والمستخدمين
+                        الإدارة
                       </button>
                     </>
                   )}
-                </>
+                </div>
               )}
               <button
                 type="button"
+                onClick={() => navigateTo("/profile")}
+                className="cursor-pointer text-right px-3 py-2 hover:bg-gray-50"
+              >
+                الملف الشخصي
+              </button>
+              <button
+                type="button"
                 onClick={() => navigateTo("/logout")}
-                className="cursor-pointer border-t border-gray-200 text-right text-red-600 transition-colors hover:bg-red-50!"
+                className="cursor-pointer px-3 py-2 text-right text-red-600 transition-colors hover:bg-red-50!"
               >
                 تسجيل الخروج
               </button>
