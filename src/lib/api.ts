@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getUser } from "@/actions";
-import { getAuthUserRole, mapPendingConnection } from "./auth-db";
+import { mapPendingConnection } from "./auth-db";
 import { verifyToken } from "./auth";
 import { ROLES } from "./roles";
 import { supabaseNew } from "./supabase";

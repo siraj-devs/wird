@@ -73,7 +73,9 @@ export default async function PanelUsersPage() {
               </thead>
               <tbody>
                 {connections.map((connection) => {
-                  const owner = usersById.get(connection.user_id);
+                  const owner = connection.user_id
+                    ? usersById.get(connection.user_id)
+                    : undefined;
                   return (
                     <tr
                       key={connection.id}

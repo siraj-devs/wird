@@ -59,6 +59,10 @@ export default async function ProfilePage() {
           className="absolute -top-10 -left-10 size-40 rounded-full bg-primary-100/60 blur-2xl"
         />
         <div className="relative">
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-800">
+            <UserIcon size={14} weight="fill" />
+            الحساب
+          </div>
           <h1 className="font-kufam text-2xl font-bold text-gray-900">
             الملف الشخصي
           </h1>

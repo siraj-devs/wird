@@ -118,11 +118,6 @@ const isSameDayInTimezone = (
   return getDateKeyInTimezone(dateA, timeZone) === getDateKeyInTimezone(dateB, timeZone);
 };
 
-// App day index is Saturday=1 ... Friday=7.
-const getAppDayOfWeek = (date: Date): number => {
-  return ((date.getDay() + 1) % 7) + 1;
-};
-
 const attachAssignmentMetadata = async (
   weekTasks: WeekTask[],
 ): Promise<WeekTask[]> => {
